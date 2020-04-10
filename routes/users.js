@@ -31,6 +31,17 @@ router.get('/invoice/:id_invoice', function(req, res, next) {
 
 });
 
+router.post('/invoice', function(req, res, next) {
+  let invoice_no = req.body.invoice_no;
+  let order_no = req.body.order_no;
+  
+  db.query(`insert into invoice (invoice_no, order_no) values (${invoice_no},${order_no})`, 
+  function (err, result) {
+    if (err) throw err;
+    
+    res.send(result);
+  })
+});
 
 router.get('/account_head', function(req, res, next) {
 
