@@ -54,7 +54,7 @@ router.post('/invoice', function(req, res, next) {
   let awb_no            = req.body.awb_no;
   let terms             = req.body.terms;
   
-  db.query(`insert into invoice (invoice_no, order_no, date, buyer_date, exporter, consignee, other,buyer,country_origin, country_final, pre_carriage, receipt_place, vessel_no,port_load,port_discharge, final_destination, marks, container_no, awb_no, terms) values (${invoice_no},${order_no}, ${date}, ${buyer_date}, ${exporter}, ${consignee}, ${other}, ${buyer}, ${country_origin}, ${country_final}, ${pre_carriage}, ${receipt_place}, ${vessel_no}, ${port_load},${port_discharge}, ${final_destination}, ${marks}, ${container_no}, ${awb_no}, ${terms})`,function (err, result) {
+  db.query(`insert into invoice (invoice_no, order_no, date, buyer_date, exporter, consignee, other,buyer,country_origin, country_final, pre_carriage, receipt_place, vessel_no,port_load,port_discharge, final_destination, marks, container_no, awb_no, terms) values (${invoice_no},${order_no}, '${date}', '${buyer_date}', '${exporter}', '${consignee}', '${other}', '${buyer}', '${country_origin}', '${country_final}', '${pre_carriage}', '${receipt_place}','${vessel_no}', '${port_load}','${port_discharge}', '${final_destination}', '${marks}', '${container_no}', '${awb_no}', '${terms}')`,function (err, result) {
     if (err) throw err;
     
     res.send(result);
