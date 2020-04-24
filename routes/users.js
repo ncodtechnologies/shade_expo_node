@@ -72,6 +72,56 @@ router.get('/account_head', function(req, res, next) {
 
 });
 
+router.get('/invoice/id_invoice/labour', function(req, res, next) {
+
+  db.query('select * from  labour l, account_head a where l.id_account_head=a.id_account_head', function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
+
+
+router.get('/invoice/id_invoice/packing', function(req, res, next) {
+
+  db.query('select * from  packing_list l, product p where l.id_product=p.id_product', function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
+
+
+router.get('/invoice/id_invoice/exp', function(req, res, next) {
+
+  db.query('select * from  other_exp e, account_head a where e.id_account_head=a.id_account_head', function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
+
+
+router.post('/invoice/expense', function(req, res, next) {
+  let date            = req.body.date;
+  let id_ledger_from  = 1;
+  let id_ledger_to    = req.body.id_ledger_to;
+  let description     = req.body.description;
+  let rate            = req.body.rate;
+  let amount          = req.body.amount;
+  let type            = req.body.type;
+  let voucher_no      = req.body.voucher_no;
+  let id_invoice      = req.body.id_invoice;
+  
+  db.query(`insert into expense (id_ledger_from ,id_ledger_to,date, description, rate, amount, type,voucher_no,id_invoice) values(${id_ledger_from},${id_ledger_to},'${date}', '${description}', '${rate}', '${amount}', '${type}',${voucher_no}, ${id_invoice}')`,function (err, result) {
+    if (err) throw err;
+    
+    res.send(result);
+  })
+});
 
 
 module.exports = router;
