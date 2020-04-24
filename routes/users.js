@@ -53,9 +53,17 @@ router.post('/invoice', function(req, res, next) {
   let container_no      = req.body.container_no;
   let awb_no            = req.body.awb_no;
   let terms             = req.body.terms;
-  
+  let items             = req.body.items;
+
   db.query(`insert into invoice (invoice_no, order_no, date, buyer_date, exporter, consignee, other,buyer,country_origin, country_final, pre_carriage, receipt_place, vessel_no,port_load,port_discharge, final_destination, marks, container_no, awb_no, terms) values (${invoice_no},${order_no}, '${date}', '${buyer_date}', '${exporter}', '${consignee}', '${other}', '${buyer}', '${country_origin}', '${country_final}', '${pre_carriage}', '${receipt_place}','${vessel_no}', '${port_load}','${port_discharge}', '${final_destination}', '${marks}', '${container_no}', '${awb_no}', '${terms}')`,function (err, result) {
     if (err) throw err;
+
+    if(result.insertId)
+      items.forEach(item => { 
+        let qry = `insert into invoice_sales (col1, col2, col3, col4) values ('${result.insertId}','${item.id_product}','${item.kg}','${item.box}')`;
+        console.log(qry); 
+        //db.query(qry, function (err, result) {  })
+      }); 
     
     res.send(result);
   })
