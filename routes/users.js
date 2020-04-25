@@ -72,9 +72,9 @@ router.get('/account_head', function(req, res, next) {
 
 });
 
-router.get('/invoice/id_invoice/labour', function(req, res, next) {
+router.get('/invoice/invLabour/:id_invoice', function(req, res, next) {
 
-  db.query('select * from  labour l, account_head a where l.id_account_head=a.id_account_head', function (err, rows, fields) {
+  db.query('select * from  invoice_labour l, account_head a where l.id_account_head=a.id_account_head and id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
@@ -83,9 +83,9 @@ router.get('/invoice/id_invoice/labour', function(req, res, next) {
 });
 
 
-router.get('/invoice/id_invoice/packing', function(req, res, next) {
+router.get('/invoice/invPacking/:id_invoice', function(req, res, next) {
 
-  db.query('select * from  packing_list l, product p where l.id_product=p.id_product', function (err, rows, fields) {
+  db.query('select * from  invoice_packing_list l, product p where l.id_product=p.id_product and l.id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
@@ -94,9 +94,9 @@ router.get('/invoice/id_invoice/packing', function(req, res, next) {
 });
 
 
-router.get('/invoice/id_invoice/exp', function(req, res, next) {
+router.get('/invoice/invPackingExp/:id_invoice', function(req, res, next) {
 
-  db.query('select * from  other_exp e, account_head a where e.id_account_head=a.id_account_head', function (err, rows, fields) {
+  db.query('select * from  invoice_packing_expense e, account_head a where e.id_account_head=a.id_account_head and id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
@@ -107,7 +107,7 @@ router.get('/invoice/id_invoice/exp', function(req, res, next) {
 
 router.post('/invoice/expense', function(req, res, next) {
   let date            = req.body.date;
-  let id_ledger_from  = 1;
+  let id_ledger_from  = req.body.id_ledger_from;
   let id_ledger_to    = req.body.id_ledger_to;
   let description     = req.body.description;
   let rate            = req.body.rate;
@@ -116,11 +116,21 @@ router.post('/invoice/expense', function(req, res, next) {
   let voucher_no      = req.body.voucher_no;
   let id_invoice      = req.body.id_invoice;
   
-  db.query(`insert into expense (id_ledger_from ,id_ledger_to,date, description, rate, amount, type,voucher_no,id_invoice) values(${id_ledger_from},${id_ledger_to},'${date}', '${description}', '${rate}', '${amount}', '${type}',${voucher_no}, ${id_invoice}')`,function (err, result) {
+  db.query(`insert into account_voucher (id_ledger_from ,id_ledger_to,date, description, rate, amount, type,voucher_no,id_invoice) values(${id_ledger_from},${id_ledger_to},'${date}', '${description}', '${rate}', '${amount}', '${type}',${voucher_no}, ${id_invoice})`,function (err, result) {
     if (err) throw err;
     
     res.send(result);
   })
+});
+
+router.get('/invoice/expense/:id_invoice', function(req, res, next) {
+
+  db.query('select tbl.acc_from,h.account_head as acc_to,tbl.date,concat(tbl.description, " x ", tbl.rate) as description,tbl.amount from(select a.account_head as acc_from,e.id_ledger_to,e.date,e.description,e.rate,e.amount,e.id_invoice from account_voucher e, account_head a where e.id_ledger_from=a.id_account_head  and id_invoice='+req.params.id_invoice+')tbl ,account_head h where tbl.id_ledger_to=h.id_account_head and id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
 });
 
 

@@ -1,0 +1,10 @@
+
+router.get('/invoice/invPacking/:id_invoice', function(req, res, next) {
+
+  db.query('select * from  invoice_packing_list l, product p where l.id_product=p.id_product and id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
