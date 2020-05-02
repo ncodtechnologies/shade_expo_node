@@ -1,9 +1,9 @@
 var express = require('express');
 var router = express.Router();
 
-router.get('/', function(req, res, next) {
+router.get('/product', function(req, res, next) {
 
-  db.query('select * from product', function (err, rows, fields) {
+  db.query('select * from z_product', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 

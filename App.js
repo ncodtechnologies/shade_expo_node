@@ -9,6 +9,7 @@ var invoiceRouter = require('./routes/invoice');
 var productRouter = require('./routes/product');
 var payrollRouter = require('./routes/payroll');
 var accountsRouter = require('./routes/accounts');
+var purchaseRouter = require('./routes/purchase');
 var mysql = require('mysql')
 
 const db = mysql.createConnection ({
@@ -38,6 +39,7 @@ app.use('/invoice', invoiceRouter);
 app.use('/product', productRouter);
 app.use('/payroll', payrollRouter);
 app.use('/accounts', accountsRouter);
+app.use('/purchase', purchaseRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
