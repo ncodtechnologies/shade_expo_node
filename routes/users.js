@@ -114,13 +114,8 @@ router.get('/invoice/invPackingExp/:id_invoice', function(req, res, next) {
 
 
 router.post('/invoice/expense', function(req, res, next) {
-<<<<<<< HEAD
-/*  let date            = req.body.date;
-  let id_ledger_from  = 1;
-=======
   let date            = req.body.date;
   let id_ledger_from  = req.body.id_ledger_from;
->>>>>>> adf5b366165f73b80b7acf079f39f55d61da3836
   let id_ledger_to    = req.body.id_ledger_to;
   let description     = req.body.description;
   let rate            = req.body.rate;
@@ -134,7 +129,7 @@ router.post('/invoice/expense', function(req, res, next) {
     
     res.send(result);
   })
-  */
+  
  
  console.log(req.body)
 });
