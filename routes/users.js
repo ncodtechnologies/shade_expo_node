@@ -134,7 +134,6 @@ router.post('/invoice/expense', function(req, res, next) {
  console.log(req.body)
 });
 
-
 router.get('/invoice/expense/:id_invoice', function(req, res, next) {
 
   db.query('select tbl.acc_from,h.account_head as acc_to,tbl.date,concat(tbl.description, " x ", tbl.rate) as description,tbl.amount from(select a.account_head as acc_from,e.id_ledger_to,e.date,e.description,e.rate,e.amount,e.id_invoice from account_voucher e, account_head a where e.id_ledger_from=a.id_account_head  and id_invoice='+req.params.id_invoice+')tbl ,account_head h where tbl.id_ledger_to=h.id_account_head and id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
@@ -145,7 +144,7 @@ router.get('/invoice/expense/:id_invoice', function(req, res, next) {
 
 });
 
-router.get('/accounts/:date/:type', function(req, res, next) {
+router.get('/voucher/:date/:type', function(req, res, next) {
 
   db.query('select tbl.type,tbl.acc_from,h.account_head as acc_to,tbl.date,concat(tbl.description, " x ", tbl.rate) as description,tbl.amount from(select a.account_head as acc_from,e.id_ledger_to,e.date,e.description,e.rate,e.amount,e.id_invoice,e.type from account_voucher e, account_head a where e.id_ledger_from=a.id_account_head  and e.date='+req.params.date+' and e.type='+req.params.type+')tbl ,account_head h where tbl.id_ledger_to=h.id_account_head and tbl.date='+req.params.date+' and tbl.type='+req.params.type+'', function (err, rows, fields) {
     if (err) throw err
