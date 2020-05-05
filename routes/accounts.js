@@ -2,12 +2,12 @@ var express = require('express');
 var router = express.Router();
 
 router.post('/ledgerCreate', function(req, res, next) {
-  let code            = req.body.code;
-  let name            = req.body.name;
-  let id              = req.body.id;
-  let op              = req.body.op;
-  let address         = req.body.address;
-  let phone           = req.body.phone;
+  let code            = (req.body.code ? req.body.code : '')
+  let name            = (req.body.name ? req.body.name : '')
+  let id              = (req.body.id ? req.body.id : '')
+  let op              = (req.body.op ? req.body.op : '')
+  let address         = (req.body.address ? req.body.address : '')
+  let phone           = (req.body.phone ? req.body.phone : '')
   
   db.query(`insert into z_account_head (code ,account_head,id_ledger_group,opening_balance,address,phone) values('${code}','${name}',${id}, '${op}', '${address}', '${phone}')`,function (err, result) {
     if (err) throw err;
@@ -58,7 +58,7 @@ router.get('/voucher/:date/:type', function(req, res, next) {
 });
 
 router.post('/accounts/voucher', function(req, res, next) {
-  let date            = req.body.date;
+  let date            = (req.body.date ? req.body.date : '' );
   let id_ledger_from  = req.body.id_ledger_from;
   let id_ledger_to    = req.body.id_ledger_to;
   let description     = req.body.description;
