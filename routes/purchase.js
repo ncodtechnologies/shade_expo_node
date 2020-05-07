@@ -13,7 +13,7 @@ router.get('/purchaseReport/:from/:to', function(req, res, next) {
 
 router.get('/purchaseVoucher/:voucher_no', function(req, res, next) {
 
-  db.query('select pv.voucher_no,pv.date,a.account_head,p.name,pvi.kg,pvi.unit_price,pvi.total from z_purchase_voucher_item pvi,z_purchase_voucher pv,z_account_head a,z_product p where p.id_product=pvi.id_product and pv.id_account_head=a.id_account_head and pvi.id_purchase_voucher=pv.id_purchase_voucher and voucher_no='+req.params.voucher_no+' ', function (err, rows, fields) {
+  db.query('select pv._old_balance,pv.voucher_no,pv.date,a.account_head,p.name,pvi.kg,pvi.unit_price,pvi.total from z_purchase_voucher_item pvi,z_purchase_voucher pv,z_account_head a,z_product p where p.id_product=pvi.id_product and pv.id_account_head=a.id_account_head and pvi.id_purchase_voucher=pv.id_purchase_voucher and voucher_no='+req.params.voucher_no+' ', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 

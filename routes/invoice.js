@@ -12,7 +12,7 @@ router.get('/invoiceList', function(req, res, next) {
 
 });
 
-router.get('/invoice/:id_invoice', function(req, res, next) {
+router.get('/invoice/?:id_invoice', function(req, res, next) {
 
   db.query('select * from invoice where id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
     if (err) throw err

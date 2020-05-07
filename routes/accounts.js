@@ -47,6 +47,23 @@ router.get('/ledger', function(req, res, next) {
 
 });
 
+router.get('/ledger/:id_ledger', function(req, res, next) {
+  
+  let qry;
+  if(id_ledger != "")
+  qry=' and l.id_ledger_group='+req.params.id_ledger+'';
+  else
+  qry='';
+
+  db.query('select * from z_account_head a, z_ledger_group l where a.id_ledger_group=l.id_ledger_group '+ qry +'', function (err, rows, fields) {
+
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
+
 router.get('/voucher/:date/:type', function(req, res, next) {
 
   db.query('select tbl.type,tbl.acc_from,h.account_head as acc_to,tbl.date,concat(tbl.description, " x ", tbl.rate) as description,tbl.amount from(select a.account_head as acc_from,e.id_ledger_to,e.date,e.description,e.rate,e.amount,e.id_invoice,e.type from account_voucher e, z_account_head a where e.id_ledger_from=a.id_account_head  and e.date='+req.params.date+' and e.type='+req.params.type+')tbl ,z_account_head h where tbl.id_ledger_to=h.id_account_head and tbl.date='+req.params.date+' and tbl.type='+req.params.type+'', function (err, rows, fields) {
