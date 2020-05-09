@@ -1,6 +1,26 @@
 var express = require('express');
 var router = express.Router();
 
+router.post('/ledgerCreate/:id_account_head', function(req, res, next) {
+  let code            = (req.body.code ? req.body.code : '')
+  let name            = (req.body.name ? req.body.name : '')
+  let id              = (req.body.id ? req.body.id : '')
+  let op              = (req.body.op ? req.body.op : '')
+  let address         = (req.body.address ? req.body.address : '')
+  let phone           = (req.body.phone ? req.body.phone : '')
+
+  if((req.params.id_account_head) == '0')
+  var qry=`insert into z_account_head (code ,account_head,id_ledger_group,opening_balance,address,phone) values('${code}','${name}',${id}, '${op}', '${address}', '${phone}')`;
+  else
+  var qry=`update z_account_head set code='${code}' ,account_head='${name}',id_ledger_group = ${id},opening_balance = '${op}',address ='${address}',phone ='${phone}' where id_account_head=`+req.params.id_account_head+``;
+  db.query(`insert into z_account_head (code ,account_head,id_ledger_group,opening_balance,address,phone) values('${code}','${name}',${id}, '${op}', '${address}', '${phone}')`,function (err, result) {
+    if (err) throw err;
+    
+    res.send(result);
+  })
+});
+
+/*
 router.post('/ledgerCreate', function(req, res, next) {
   let code            = (req.body.code ? req.body.code : '')
   let name            = (req.body.name ? req.body.name : '')
@@ -8,13 +28,16 @@ router.post('/ledgerCreate', function(req, res, next) {
   let op              = (req.body.op ? req.body.op : '')
   let address         = (req.body.address ? req.body.address : '')
   let phone           = (req.body.phone ? req.body.phone : '')
-  
+
+  let qry_save='insert into z_account_head (code ,account_head,id_ledger_group,opening_balance,address,phone) values(${code},${name},${id}, ${op}, ${address}, ${phone})';
+  let qry_update='update z_account_head set code ,account_head,id_ledger_group,opening_balance,address,phone';
   db.query(`insert into z_account_head (code ,account_head,id_ledger_group,opening_balance,address,phone) values('${code}','${name}',${id}, '${op}', '${address}', '${phone}')`,function (err, result) {
     if (err) throw err;
     
     res.send(result);
   })
 });
+*/
 
 router.post('/ledgerGroup', function(req, res, next) {
   let ledger       = req.body.ledger;
@@ -47,11 +70,11 @@ router.get('/ledger', function(req, res, next) {
 
 });
 
-router.get('/ledger/:id_ledger', function(req, res, next) {
+router.get('/ledger/:id_ledger_group', function(req, res, next) {
   
   let qry;
-  if(id_ledger != "")
-  qry=' and l.id_ledger_group='+req.params.id_ledger+'';
+  if(req.params.id_ledger_group != "")
+  qry=' and l.id_ledger_group='+req.params.id_ledger_group+'';
   else
   qry='';
 
@@ -64,9 +87,30 @@ router.get('/ledger/:id_ledger', function(req, res, next) {
 
 });
 
+router.get('/ledgerEdit/:id_ledger', function(req, res, next) {
+  
+  db.query('select * from z_account_head a, z_ledger_group l where a.id_ledger_group=l.id_ledger_group and a.id_account_head='+req.params.id_ledger+'', function (err, rows, fields) {
+
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
+
 router.get('/voucher/:date/:type', function(req, res, next) {
 
-  db.query('select tbl.type,tbl.acc_from,h.account_head as acc_to,tbl.date,concat(tbl.description, " x ", tbl.rate) as description,tbl.amount from(select a.account_head as acc_from,e.id_ledger_to,e.date,e.description,e.rate,e.amount,e.id_invoice,e.type from account_voucher e, z_account_head a where e.id_ledger_from=a.id_account_head  and e.date='+req.params.date+' and e.type='+req.params.type+')tbl ,z_account_head h where tbl.id_ledger_to=h.id_account_head and tbl.date='+req.params.date+' and tbl.type='+req.params.type+'', function (err, rows, fields) {
+  db.query('select tbl.type,tbl.acc_from,h.account_head as acc_to,tbl.date,concat(tbl.description, " x ", tbl.rate) as description,tbl.amount,tbl.id_account_voucher from(select a.account_head as acc_from,e.id_ledger_to,e.date,e.description,e.rate,e.amount,e.id_invoice,e.type,e.id_account_voucher from account_voucher e, z_account_head a where e.id_ledger_from=a.id_account_head  and e.date='+req.params.date+' and e.type='+req.params.type+')tbl ,z_account_head h where tbl.id_ledger_to=h.id_account_head and tbl.date='+req.params.date+' and tbl.type='+req.params.type+'', function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
+
+router.get('/voucherDel/:id_account_voucher', function(req, res, next) {
+
+  db.query('delete from account_voucher where id_account_voucher='+req.params.id_account_voucher+'', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 

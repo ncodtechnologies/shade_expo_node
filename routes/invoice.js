@@ -4,7 +4,7 @@ var router = express.Router();
 
 router.get('/invoiceList', function(req, res, next) {
 
-  db.query('select * from invoice', function (err, rows, fields) {
+  db.query('select id_invoice,invoice_no,consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from invoice', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
@@ -12,7 +12,7 @@ router.get('/invoiceList', function(req, res, next) {
 
 });
 
-router.get('/invoice/?:id_invoice', function(req, res, next) {
+router.get('/invoice/:id_invoice', function(req, res, next) {
 
   db.query('select * from invoice where id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
     if (err) throw err
@@ -67,7 +67,7 @@ router.get('/invoice/invLabour/:id_invoice', function(req, res, next) {
 
 router.get('/invoice/invPacking/:id_invoice', function(req, res, next) {
 
-  db.query('select * from  invoice_packing_list l, z_product p where l.id_product=p.id_product' , function (err, rows, fields) {
+  db.query('select * from  invoice_packing_list l, z_product p where l.id_product=p.id_product and id_invoice='+req.params.id_invoice+'' , function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
