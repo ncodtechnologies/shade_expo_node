@@ -19,7 +19,7 @@ router.post('/payroll', function(req, res, next) {
 
 router.get('/payroll/:date', function(req, res, next) {
 
-  db.query('select a.account_head as name,DATE_FORMAT(p.date, "%d/%m/%Y") as date,p.type,p.amount,p.id_payroll from payroll p, z_account_head a where p.id_ledger=a.id_account_head and date='+req.params.date+'', function (err, rows, fields) {
+  db.query('select a.account_head as name,DATE_FORMAT(p.date, "%d/%m/%Y") as date,p.type,p.amount,p.id_payroll from payroll p, account_head a where p.id_ledger=a.id_account_head and date='+req.params.date+'', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
