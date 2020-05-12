@@ -1,5 +1,8 @@
 var express = require('express');
 var router = express.Router();
+const fs = require('fs');
+var multer  = require('multer')
+var upload = multer({ dest: 'uploads/' })
 
 
 router.get('/invoiceList', function(req, res, next) {
@@ -115,6 +118,26 @@ router.get('/invoice/expense/:id_invoice', function(req, res, next) {
   })
 
 });
+
+
+router.post('/docs', upload.array('files', 12), async (req, res) => {
+   console.log(JSON.stringify(req.files));
+     //Move files
+   req.files.forEach(file => {
+     var oldFile = `uploads/${file.filename}`;
+     var newPath = `uploads/invoice_docs/`;
+     if (!fs.existsSync(newPath))
+         fs.mkdirSync(`uploads/invoice_docs/`);
+     
+     var source = fs.createReadStream(oldFile);
+     var dest = fs.createWriteStream(`${newPath}/${file.originalname}`);
+ 
+     source.pipe(dest);
+     source.on('end', function() { fs.unlink(oldFile) });
+   });
+  
+   return res.send(req);
+ });
 
 
 module.exports = router;

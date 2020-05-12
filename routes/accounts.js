@@ -1,7 +1,8 @@
 var express = require('express');
 var router = express.Router();
 
-router.post('/ledgerCreate/:id_account_head', function(req, res, next) {
+router.post('/ledgerCreate', function(req, res, next) {
+  console.log(req.body);
   let code            = (req.body.code ? req.body.code : '')
   let name            = (req.body.name ? req.body.name : '')
   let id              = (req.body.id ? req.body.id : '')
@@ -9,7 +10,7 @@ router.post('/ledgerCreate/:id_account_head', function(req, res, next) {
   let address         = (req.body.address ? req.body.address : '')
   let phone           = (req.body.phone ? req.body.phone : '')
 
-  if((req.params.id_account_head) == '0')
+  if((req.body.id_account_head) == 0)
   var qry=`insert into z_account_head (code ,account_head,id_ledger_group,opening_balance,address,phone) values('${code}','${name}',${id}, '${op}', '${address}', '${phone}')`;
   else
   var qry=`update z_account_head set code='${code}' ,account_head='${name}',id_ledger_group = ${id},opening_balance = '${op}',address ='${address}',phone ='${phone}' where id_account_head=`+req.params.id_account_head+``;
