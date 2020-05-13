@@ -147,5 +147,37 @@ router.get('/invoice/expenseDel/:id_account_voucher', function(req, res, next) {
 
 });
 
+router.post('/invoice/documents', function(req, res, next) {
+
+  let id_invoice      = req.body.id_invoice;
+  let name            = req.body.name;
+  let remark         = req.body.remark;
+  
+  db.query(`insert into documents (id_invoice,name,remarks) values( ${id_invoice}, '${name}','${remark}')`,function (err, result) {
+    if (err) throw err;
+    
+    res.send(result);
+  })
+});
+
+router.get('/invoice/documentsList/:id_invoice', function(req, res, next) {
+
+  db.query('select * from documents where id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
+
+router.get('/invoice/documentsDel/:id_document', function(req, res, next) {
+
+  db.query('delete from documents where id_document='+req.params.id_document+'', function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
 
 module.exports = router;
