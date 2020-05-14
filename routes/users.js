@@ -154,23 +154,32 @@ router.get('/voucher/:date/:type', function(req, res, next) {
 
 });
 
-router.post('/payroll', function(req, res, next) {
-  let date            = req.body.date;
-  let id_ledger       = req.body.id_ledger;
-  let amount          = req.body.amount;
-  let type            = req.body.type;
+router.post('/invoice/documents', function(req, res, next) {
+
+  let id_invoice      = req.body.id_invoice;
+  let name            = req.body.name;
+  let remark         = req.body.remark;
   
-  db.query(`insert into payroll (date, id_ledger, type, amount) values('${date}', ${id_ledger}, '${type}', '${amount}')`,function (err, result) {
+  db.query(`insert into documents (id_invoice,name,remarks) values( ${id_invoice}, '${name}','${remark}')`,function (err, result) {
     if (err) throw err;
     
     res.send(result);
   })
 });
 
+router.get('/invoice/documentsList/:id_invoice', function(req, res, next) {
 
-router.get('/payroll/:date', function(req, res, next) {
+  db.query('select * from documents where id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
+    if (err) throw err
 
-  db.query('select a.account_head as name,p.date,p.type,p.amount from payroll p, account_head a where p.id_ledger=a.id_account_head and date='+req.params.date+'', function (err, rows, fields) {
+     res.send(rows); 
+  })
+
+});
+
+router.get('/invoice/documentsDel/:id_document', function(req, res, next) {
+
+  db.query('delete from documents where id_document='+req.params.id_document+'', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
