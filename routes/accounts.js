@@ -12,9 +12,9 @@ router.post('/ledgerCreate', function(req, res, next) {
   let phone           = (req.body.phone ? req.body.phone : '')
   
   if((req.body.id_account_head) == '0')
-  var qry=`insert into account_head (code ,account_head,id_ledger_group,opening_balance,address,phone) values('${code}','${name}',${id}, '${op}', '${address}', '${phone}')`;
+  var qry=`insert into account_head (code ,name,id_ledger_group,opening_balance,address,phone) values('${code}','${name}',${id}, '${op}', '${address}', '${phone}')`;
   else
-  var qry=`update account_head set code='${code}' ,account_head='${name}',id_ledger_group = ${id},opening_balance = '${op}',address ='${address}',phone ='${phone}' where id_account_head=`+req.body.id_account_head+``;
+  var qry=`update account_head set code='${code}' ,name='${name}',id_ledger_group = ${id},opening_balance = '${op}',address ='${address}',phone ='${phone}' where id_account_head=`+req.body.id_account_head+``;
   
   db.query(``+qry+``,function (err, result) {
     if (err) throw err;
@@ -122,6 +122,46 @@ router.post('/accounts/voucher', function(req, res, next) {
   })
 });
 
+router.get('/cashBookOp/:from_date/:id_account_head', function(req, res, next) {
+  
+  db.query(`SELECT ROUND(SUM(debit)-SUM(credit)) AS balance FROM 
+  (
+      SELECT '1' AS slno, id_account_voucher AS id, CAST(amount AS CHAR) AS debit, '0' AS credit 			FROM account_voucher av, z_account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0   AND date<${from_date} and id_ledger_to=${id_account_head}
+      UNION
+      SELECT '2' AS slno, id_account_voucher AS id, '0' AS debit,			 CAST(amount AS CHAR) AS credit FROM account_voucher av, z_account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date<${from_date} and id_ledger_to=${id_account_head}
+  )tbl`, function (err, rows, fields) {
+
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
+
+router.get('/cashBookDebit/:from_date/:to_date/:id_account_head', function(req, res, next) {
+  
+  db.query(`SELECT NAME,narration,ROUND(SUM(debit)) AS debit FROM 
+  (
+      SELECT '1' AS slno, id_account_voucher AS id, (SELECT NAME FROM z_account_head WHERE id_account_head=av.id_ledger_from) AS NAME ,description AS narration,CAST(amount AS CHAR) AS debit FROM account_voucher av, z_account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head}
+  )tbl GROUP BY NAME`, function (err, rows, fields) {
+
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
+
+router.get('/cashBookCredit/:from_date/:to_date/:id_account_head', function(req, res, next) {
+  
+  db.query(`SELECT NAME,narration,ROUND(SUM(credit)) AS credit FROM (SELECT '2' AS slno, id_account_voucher AS id, (SELECT NAME FROM account_head WHERE id_account_head=av.id_ledger_to) AS NAME ,description AS narration,CAST(amount AS CHAR) AS credit FROM account_voucher av, account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head})tbl GROUP BY NAME`, function (err, rows, fields) {
+
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
 module.exports = router;
 
 /* Cash book Queries */
