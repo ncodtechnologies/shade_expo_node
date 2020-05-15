@@ -48,7 +48,7 @@ router.get('/ledgerGroup', function(req, res, next) {
 
 router.get('/ledger', function(req, res, next) {
 
-  db.query('select * from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group', function (err, rows, fields) {
+  db.query('select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
@@ -86,7 +86,7 @@ router.get('/ledgerEdit/:id_ledger', function(req, res, next) {
 
 router.get('/voucher/:date/:type', function(req, res, next) {
 
-  db.query('select tbl.type,tbl.acc_from,h.account_head as acc_to,tbl.date,concat(tbl.description, " x ", tbl.rate) as description,tbl.amount,tbl.id_account_voucher from(select a.account_head as acc_from,e.id_ledger_to,e.date,e.description,e.rate,e.amount,e.id_invoice,e.type,e.id_account_voucher from account_voucher e, account_head a where e.id_ledger_from=a.id_account_head  and e.date='+req.params.date+' and e.type='+req.params.type+')tbl ,account_head h where tbl.id_ledger_to=h.id_account_head and tbl.date='+req.params.date+' and tbl.type='+req.params.type+'', function (err, rows, fields) {
+  db.query('select tbl.type,tbl.acc_from,h.name as acc_to,tbl.date,concat(tbl.description, " x ", tbl.rate) as description,tbl.amount,tbl.id_account_voucher from(select a.name as acc_from,e.id_ledger_to,e.date,e.description,e.rate,e.amount,e.id_invoice,e.type,e.id_account_voucher from account_voucher e, account_head a where e.id_ledger_from=a.id_account_head  and e.date='+req.params.date+' and e.type='+req.params.type+')tbl ,account_head h where tbl.id_ledger_to=h.id_account_head and tbl.date='+req.params.date+' and tbl.type='+req.params.type+'', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
@@ -123,3 +123,23 @@ router.post('/accounts/voucher', function(req, res, next) {
 });
 
 module.exports = router;
+
+/* Cash book Queries */
+var from_date ='', to_date = '', id_account_head = '';
+var qry_debit = `SELECT NAME,narration,ROUND(SUM(debit)) AS debit FROM 
+                  (
+                      SELECT '1' AS slno, id_account_voucher AS id, (SELECT NAME FROM z_account_head WHERE id_account_head=av.id_ledger_from) AS NAME ,description AS narration,CAST(amount AS CHAR) AS debit FROM account_voucher av, z_account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head}
+                  )tbl GROUP BY NAME`;
+
+                  
+var qry_credit = `SELECT NAME,narration,ROUND(SUM(credit)) AS credit FROM 
+                  (
+                      SELECT '2' AS slno, id_account_voucher AS id, (SELECT NAME FROM z_account_head WHERE id_account_head=av.id_ledger_to) AS NAME ,description AS narration,CAST(amount AS CHAR) AS credit FROM account_voucher av, z_account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head}
+                  )tbl GROUP BY NAME`;
+                  
+var qry_opening = `SELECT ROUND(SUM(debit)-SUM(credit)) AS balance FROM 
+                  (
+                      SELECT '1' AS slno, id_account_voucher AS id, CAST(amount AS CHAR) AS debit, '0' AS credit 			FROM account_voucher av, z_account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0   AND date<${from_date} and id_ledger_to=${id_account_head}
+                      UNION
+                      SELECT '2' AS slno, id_account_voucher AS id, '0' AS debit,			 CAST(amount AS CHAR) AS credit FROM account_voucher av, z_account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date<${from_date} and id_ledger_to=${id_account_head}
+                  )tbl`;

@@ -150,97 +150,25 @@ router.get('/invoice/expenseDel/:id_account_voucher', function(req, res, next) {
 
 });
 
-router.get('/invoice/documentsList/:id_invoice', function(req, res, next) {
 
-  db.query('select * from documents where id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
-    if (err) throw err
-    
-     res.send(rows); 
-  }) 
-
-});
-
-router.get('/invoice/documentsDel/:id_document', function(req, res, next) {
-
-  db.query('select id_invoice,file from documents where id_document='+req.params.id_document+'', function (err, rows, fields) {
-    if (err) throw err
-    
-    if(rows.length>0){
-      
-      db.query('delete from documents where id_document='+req.params.id_document+'', function (err, rows, fields) { })
-      var filename = `uploads/invoice_docs/${rows[0].id_invoice}/${rows[0].file}`;
-      fs.stat(filename, function (err, stats) {
-        console.log(stats);
-        if (err) 
-            return console.error(err);
-        
-        fs.unlink(filename, function(err, result) {
-          if(err) console.log('error', err);
-        }); 
-     });
-    }
-    
-    res.send(rows); 
-  })
-
-});
-
-router.post('/invoice/documents', upload.array('files', 12), async (req, res) => {
-
-  let id_invoice      = req.body.id_invoice;
-  let name            = req.body.name;
-  let remark          = req.body.remark;
-  var filename        = req.files ? req.files[0].originalname : "";
-  
-  if (req.files)
-    req.files.forEach((file) => {
-      var oldFile = `uploads/${file.filename}`;
-      var newPath = `uploads/invoice_docs/${id_invoice}`;
-      if (!fs.existsSync(newPath))
-        fs.mkdirSync(`uploads/invoice_docs/${id_invoice}`);
-
-      var source = fs.createReadStream(oldFile);
-      var dest = fs.createWriteStream(`${newPath}/${file.originalname}`);
-      fs.stat(oldFile, function (err, stats) {
-        console.log(stats);
-        console.log(oldFile);
-        if (err) return console.error(err);
-
-        source.pipe(dest);
-        source.on("end", function () {
-          fs.unlink(oldFile, function(err, result) {
-            if(err) console.log('error', err);
-          });
-        });
-      });
+router.post('/docs', upload.array('files', 12), async (req, res) => {
+   console.log(JSON.stringify(req.files));
+     //Move files
+   req.files.forEach(file => {
+     var oldFile = `uploads/${file.filename}`;
+     var newPath = `uploads/invoice_docs/`;
+     if (!fs.existsSync(newPath))
+         fs.mkdirSync(`uploads/invoice_docs/`);
+     
+     var source = fs.createReadStream(oldFile);
+     var dest = fs.createWriteStream(`${newPath}/${file.originalname}`);
+ 
+     source.pipe(dest);
+     source.on('end', function() { fs.unlink(oldFile) });
    });
+  
+   return res.send(req);
+ });
 
-  db.query(`insert into documents (id_invoice,name,remarks,file) values( ${id_invoice}, '${name}','${remark}','${filename}')`,function (err, result) {
-    if (err) throw err;
-    
-    res.send(result);
-  })
-});
-
-router.get('/invoice/getDoc/:id_document', function(req, res){ 
-  console.log("aaaa");
-  db.query(`select id_invoice,file from documents where id_document=${req.params.id_document}`, function (err, rows, fields) {
-    if (err) throw err
-    
-    if(rows.length>0){
-      
-      var filename = `uploads/invoice_docs/${rows[0].id_invoice}/${rows[0].file}`;
-      fs.stat(filename, function (err, stats) {
-        console.log(stats);
-        if (err) 
-            return console.error(err);
-        
-        res.download(filename);
-     });
-    }
-    
-  })
-
-});
 
 module.exports = router;
