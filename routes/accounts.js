@@ -1,8 +1,8 @@
 var express = require('express');
 var router = express.Router();
+var Constants = require('./constant.json')
 
 router.post('/ledgerCreate', function(req, res, next) {
-  console.log(req.body)
 
   let code            = (req.body.code ? req.body.code : '')
   let name            = (req.body.name ? req.body.name : '')
@@ -12,26 +12,43 @@ router.post('/ledgerCreate', function(req, res, next) {
   let phone           = (req.body.phone ? req.body.phone : '')
   
   if((req.body.id_account_head) == '0')
-  var qry=`insert into account_head (code ,account_head,id_ledger_group,opening_balance,address,phone) values('${code}','${name}',${id}, '${op}', '${address}', '${phone}')`;
+  {
+    db.query(`select max(id_account_head)+1 as id_account_head FROM account_head where id_account_head>=${Constants.SERVER_LEDGER_LIMIT}`, function (err, rows, fields) {
+      if (err) throw err
+      
+      var id_account_head = rows[0].id_account_head != null ? rows[0].id_account_head : Constants.SERVER_LEDGER_LIMIT;
+      var qry=`insert into account_head (id_account_head, code ,name,id_ledger_group,opening_balance,address,phone) values('${id_account_head}','${code}','${name}',${id}, '${op}', '${address}', '${phone}')`;
+      
+      db.query(qry,function (err, result) {
+        if (err) throw err;
+        
+        res.send(result);
+      });
+    })
+  }
   else
-  var qry=`update account_head set code='${code}' ,account_head='${name}',id_ledger_group = ${id},opening_balance = '${op}',address ='${address}',phone ='${phone}' where id_account_head=`+req.body.id_account_head+``;
+  {
+    var qry=`update account_head set code='${code}' ,name='${name}',id_ledger_group = ${id},opening_balance = '${op}',address ='${address}',phone ='${phone}' where id_account_head=`+req.body.id_account_head+``;
   
-  db.query(``+qry+``,function (err, result) {
-    if (err) throw err;
-    
-    res.send(result);
-  })
+    db.query(qry,function (err, result) {
+      if (err) throw err;
+      
+      res.send(result);
+    })
+  }
 });
-
-
 
 router.post('/ledgerGroup', function(req, res, next) {
   let ledger       = req.body.ledger;
   
-  db.query(`insert into ledger_group (name) values('${ledger}')`,function (err, result) {
-    if (err) throw err;    
-    res.send(result);
+  db.query(`select max(id_ledger_group)+1 as id_ledger_group FROM ledger_group where id_ledger_group>=${Constants.SERVER_LEDGER_LIMIT}`, function (err, rows, fields) {
+    if (err) throw err
+    
+    var id_ledger_group = rows[0].id_ledger_group != null ? rows[0].id_ledger_group : Constants.SERVER_LEDGER_LIMIT;
+    db.query(`insert into ledger_group (id_ledger_group, name) values('${id_ledger_group}','${ledger}')`);
+
   })
+
 });
 
 
@@ -58,13 +75,15 @@ router.get('/ledger', function(req, res, next) {
 
 router.get('/ledger/:id_ledger_group', function(req, res, next) {
   
-  let qry;
+  let qry = '';
   if(req.params.id_ledger_group != "")
-  qry=' and l.id_ledger_group='+req.params.id_ledger_group+'';
-  else
-  qry='';
+  {
+    qry=' and l.id_ledger_group='+req.params.id_ledger_group+'';
+    if(req.params.id_ledger_group < 0)
+      qry=` and l.id_ledger_group!=${-1*req.params.id_ledger_group}`;
+  }
 
-  db.query('select * from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group '+ qry +'', function (err, rows, fields) {
+  db.query('select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group '+ qry +'', function (err, rows, fields) {
 
     if (err) throw err
 

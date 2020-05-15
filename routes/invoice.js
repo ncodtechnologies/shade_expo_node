@@ -223,7 +223,7 @@ router.post('/invoice/documents', upload.array('files', 12), async (req, res) =>
 });
 
 router.get('/invoice/getDoc/:id_document', function(req, res){ 
-  console.log("aaaa");
+  
   db.query(`select id_invoice,file from documents where id_document=${req.params.id_document}`, function (err, rows, fields) {
     if (err) throw err
     
