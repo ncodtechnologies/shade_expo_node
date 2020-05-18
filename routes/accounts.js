@@ -51,7 +51,6 @@ router.post('/ledgerGroup', function(req, res, next) {
 
 });
 
-
 router.get('/ledgerGroup', function(req, res, next) {
 
   db.query('select * from ledger_group', function (err, rows, fields) {
@@ -61,7 +60,6 @@ router.get('/ledgerGroup', function(req, res, next) {
   })
 
 });
-
 
 router.get('/ledger', function(req, res, next) {
 
@@ -185,21 +183,57 @@ router.get('/cashBookCredit/:from_date/:to_date/:id_account_head', function(req,
 module.exports = router;
 
 /* Cash book Queries */
-var from_date ='', to_date = '', id_account_head = '';
-var qry_debit = `SELECT NAME,narration,ROUND(SUM(debit)) AS debit FROM 
-                  (
-                      SELECT '1' AS slno, id_account_voucher AS id, (SELECT NAME FROM z_account_head WHERE id_account_head=av.id_ledger_from) AS NAME ,description AS narration,CAST(amount AS CHAR) AS debit FROM account_voucher av, z_account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head}
-                  )tbl GROUP BY NAME`;
+var from_date ='', to_date = '';
+var qry_stock = `
+SELECT tbl.id_product,tbl.product,ifnull(round(purchased,2),0) as purchased,ifnull(round(sold,2),0) as sold,ifnull(round(purchased,2),0)-ifnull(round(sold,2),0) as stock, _tbl.rate, tbl.unit FROM
+                    (
+                        SELECT id_product,product, sum(sold) as sold, unit from
+                        (
+                            SELECT id_sales_voucher_item as id,i.id_product,i.name as product,unit,sum(quantity) as sold FROM z_sales_voucher sv, z_sales_voucher_item svi,  z_product i WHERE sv.id_sales_voucher=svi.id_sales_voucher and date between ${from_date} and ${to_date}  and svi.id_product=i.id_product " + conItem +  @"  GROUP By date,id_product
+                            UNION
+                            SELECT id_stock as id, i.id_product,i.name as product,unit,sum(st.quantity) as sold               FROM z_stock st,                                            z_product i WHERE st.id_product=i.id_product and st.type=1  and date between ${from_date} and ${to_date}  GROUP By date,i.id_product
+                            UNION
+                            SELECT id_invoice_items AS id, i.id_product, i.name AS product, '0' AS unit, SUM(kg) AS sold FROM invoice inv, invoice_items inv_i, z_product i WHERE inv.id_invoice=inv_i.id_invoice AND inv_i.id_product=i.id_product and date between ${from_date} and ${to_date} GROUP By date,i.id_product
+                        ) __tbl1  GROUP By id_product
+                    ) tbl
+                    left JOIN
+                    (
+                        SELECT id_product,unit, sum(round(purchased,2)) as purchased, round(avg(rate)) as rate from
+                        (
+			                SELECT id,id_product, purchased, rate, unit FROM (
+                                SELECT  id_purchase_voucher_item as id, unit,date,i.id_product,sum(quantity) as purchased, unit_price as rate FROM z_purchase_voucher pv, z_purchase_voucher_item pvi, z_product i where pvi.id_product=i.id_product and pv.id_purchase_voucher=pvi.id_purchase_voucher and date between ${from_date} and ${to_date}   GROUP BY date,id_product
+                                UNION
+                                SELECT id_stock as id,unit,date, i.id_product,sum(st.quantity) as purchased, rate FROM z_stock st, z_product i WHERE st.id_product=i.id_product and st.type=0 and date between ${from_date} and ${to_date} GROUP By date,i.id_product
+                            ) tbl3 ORDER BY DATE DESC LIMIT 18446744073709551615
+                         ) __tbl2 GROUP BY id_product
+                    ) _tbl
+                    ON 
+                    (tbl.id_product=_tbl.id_product) 
+                    " + conStock + @"
+                    UNION
 
-                  
-var qry_credit = `SELECT NAME,narration,ROUND(SUM(credit)) AS credit FROM 
-                  (
-                      SELECT '2' AS slno, id_account_voucher AS id, (SELECT NAME FROM z_account_head WHERE id_account_head=av.id_ledger_to) AS NAME ,description AS narration,CAST(amount AS CHAR) AS credit FROM account_voucher av, z_account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head}
-                  )tbl GROUP BY NAME`;
-                  
-var qry_opening = `SELECT ROUND(SUM(debit)-SUM(credit)) AS balance FROM 
-                  (
-                      SELECT '1' AS slno, id_account_voucher AS id, CAST(amount AS CHAR) AS debit, '0' AS credit 			FROM account_voucher av, z_account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0   AND date<${from_date} and id_ledger_to=${id_account_head}
-                      UNION
-                      SELECT '2' AS slno, id_account_voucher AS id, '0' AS debit,			 CAST(amount AS CHAR) AS credit FROM account_voucher av, z_account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date<${from_date} and id_ledger_to=${id_account_head}
-                  )tbl`;
+                   SELECT _tbl.id_product,_tbl.product,ifnull(round(purchased,2),0) as purchased,ifnull(round(sold,2),0) as sold,ifnull(round(purchased,2),0)-ifnull(round(sold,2),0) as stock, _tbl.rate, _tbl.unit FROM
+                    (
+                        SELECT id_product,product, sum(sold) as sold, unit from
+                        (
+                            SELECT id_sales_voucher_item as id,unit,i.id_product,i.name as product,sum(quantity) as sold FROM z_sales_voucher sv, z_sales_voucher_item svi,  z_product i WHERE sv.id_sales_voucher=svi.id_sales_voucher and date between ${from_date} and ${to_date}  and svi.id_product=i.id_product GROUP By date,id_product
+                            UNION
+                            SELECT id_stock as id,unit, i.id_product,i.name as product,sum(st.quantity) as sold               FROM z_stock st,                                            z_product i WHERE st.id_product=i.id_product and st.type=1  and date between ${from_date} and ${to_date} GROUP By date,i.id_product
+                            UNION
+                            SELECT id_invoice_items AS id, i.id_product, i.name AS product, '0' AS unit, SUM(kg) AS sold FROM invoice inv, invoice_items inv_i, z_product i WHERE inv.id_invoice=inv_i.id_invoice AND inv_i.id_product=i.id_product and date between ${from_date} and ${to_date}  GROUP By date,i.id_product
+                        ) __tbl1  GROUP By id_product
+                    ) tbl
+                    right JOIN
+                    (
+                        SELECT id_product, product, sum(round(purchased,2)) as purchased,  round(avg(rate)) as rate, unit from
+                        (
+			                SELECT id,id_product, product, purchased, rate, unit FROM (
+                                SELECT  id_purchase_voucher_item as id,unit, date, i.id_product,i.name as product,sum(quantity) as purchased, unit_price as rate FROM z_purchase_voucher pv, z_purchase_voucher_item pvi,  z_product i where pv.id_purchase_voucher=pvi.id_purchase_voucher  and pvi.id_product=i.id_product and date between ${from_date} and ${to_date}  GROUP BY date,id_product
+                                UNION
+                                SELECT id_stock as id,unit, date, i.id_product,i.name as product,sum(st.quantity) as purchased, rate FROM z_stock st, z_product i WHERE st.id_product=i.id_product and st.id_product=i.id_product and st.type=0 and date between ${from_date} and ${to_date}  GROUP By date,i.id_product
+                            ) tbl3 ORDER BY DATE DESC LIMIT 18446744073709551615
+                         ) __tbl2 GROUP BY id_product
+                    ) _tbl
+                    ON 
+                    (tbl.id_product=_tbl.id_product) 
+                    `;
