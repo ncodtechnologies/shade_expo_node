@@ -19,7 +19,7 @@ const db = mysql.createConnection ({
   user: 'root',
   password: '',
   database: 'shade_app',
-  port: 3307
+  port: 3306
 });
 
 var app = express();

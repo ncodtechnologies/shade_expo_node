@@ -220,6 +220,26 @@ router.get('/invoice/expenseDel/:id_account_voucher', function(req, res, next) {
 
 });
 
+router.get('/invoice/netSalesTotal/:id_invoice', function(req, res, next) {
+
+  db.query('select sum(total) as tot from invoice_items where id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
+    if (err) throw err
+    
+     res.send(rows); 
+  }) 
+
+});
+
+router.get('/invoice/netOtherExp/:id_invoice', function(req, res, next) {
+
+  db.query('select sum(amount) as tot from account_voucher where id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
+    if (err) throw err
+    
+     res.send(rows); 
+  }) 
+
+});
+
 router.get('/invoice/documentsList/:id_invoice', function(req, res, next) {
 
   db.query('select * from documents where id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {

@@ -144,7 +144,7 @@ router.get('/cashBookOp/:from_date/:id_account_head', function(req, res, next) {
   let from_date = req.params.from_date;
   let id_account_head = req.params.id_account_head;
 
-  db.query(`SELECT ROUND(SUM(debit)-SUM(credit)) AS balance FROM ( SELECT '1' AS slno, id_account_voucher AS id, CAST(amount AS CHAR) AS debit, '0' AS credit 			FROM account_voucher av, account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0 AND date<${from_date} and id_ledger_to=${id_account_head} UNION SELECT '2' AS slno, id_account_voucher AS id, '0' AS debit,			 CAST(amount AS CHAR) AS credit FROM account_voucher av, account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date<${from_date} and id_ledger_to=${id_account_head} )tbl`, function (err, rows, fields) {
+  db.query(`SELECT ROUND(SUM(debit)-SUM(credit)) AS balance FROM ( SELECT '1' AS slno, id_account_voucher AS id, CAST(amount AS CHAR) AS debit, '0' AS credit 			FROM account_voucher av, account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0   AND date<${from_date} and id_ledger_to=${id_account_head} UNION SELECT '2' AS slno, id_account_voucher AS id, '0' AS debit,			 CAST(amount AS CHAR) AS credit FROM account_voucher av, account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date<${from_date} and id_ledger_to=${id_account_head} )tbl`, function (err, rows, fields) {
 
     if (err) throw err
 
