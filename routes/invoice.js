@@ -66,7 +66,7 @@ router.get('/invoice/:id_invoice', function(req, res, next) {
         final_destination: rows[0].final_destination ,
         marks            : rows[0].marks ,
         container_no     : rows[0].container_no ,
-        awb_no           : rows[0].awb_no ,
+        awb_no           : rows[0].awb_no , 
         terms            : rows[0].terms ,
         items : rowItems
       }]
@@ -204,7 +204,7 @@ router.get('/invoice/expense/:id_invoice', function(req, res, next) {
   db.query('select tbl.id_account_voucher,tbl.acc_from,h.name as acc_to,DATE_FORMAT(tbl.date, "%d/%m/%Y") as date,concat(tbl.description, " x ", tbl.rate) as description,tbl.amount from(select e.id_account_voucher,a.name as acc_from,e.id_ledger_to,e.date,e.description,e.rate,e.amount,e.id_invoice from account_voucher e, account_head a where e.id_ledger_from=a.id_account_head  and id_invoice='+req.params.id_invoice+')tbl ,account_head h where tbl.id_ledger_to=h.id_account_head and id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
     if (err) throw err
 
-     res.send(rows); 
+     res.send(rows);  
   })
 
 }); 
@@ -248,8 +248,8 @@ router.get('/invoice/documentsList/:id_invoice', function(req, res, next) {
      res.send(rows); 
   }) 
 
-});
-
+}); 
+ 
 router.get('/invoice/documentsDel/:id_document', function(req, res, next) {
 
   db.query('select id_invoice,file from documents where id_document='+req.params.id_document+'', function (err, rows, fields) {

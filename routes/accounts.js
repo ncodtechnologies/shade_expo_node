@@ -103,7 +103,7 @@ router.get('/ledgerEdit/:id_ledger', function(req, res, next) {
 
 router.get('/voucher/:date/:type', function(req, res, next) {
 
-  db.query('select tbl.type,tbl.acc_from,h.name as acc_to,tbl.date,concat(tbl.description, " x ", tbl.rate) as description,tbl.amount,tbl.id_account_voucher from(select a.name as acc_from,e.id_ledger_to,e.date,e.description,e.rate,e.amount,e.id_invoice,e.type,e.id_account_voucher from account_voucher e, account_head a where e.id_ledger_from=a.id_account_head  and e.date='+req.params.date+' and e.type='+req.params.type+')tbl ,account_head h where tbl.id_ledger_to=h.id_account_head and tbl.date='+req.params.date+' and tbl.type='+req.params.type+'', function (err, rows, fields) {
+  db.query('select tbl.type,tbl.acc_from,h.name as acc_to,tbl.date,if(tbl.rate>0, concat(tbl.description, " x ", tbl.rate),tbl.description) as description,tbl.amount,tbl.id_account_voucher from(select a.name as acc_from,e.id_ledger_to,e.date,e.description,e.rate,e.amount,e.id_invoice,e.type,e.id_account_voucher from account_voucher e, account_head a where e.id_ledger_from=a.id_account_head  and e.date='+req.params.date+' and e.type='+req.params.type+')tbl ,account_head h where tbl.id_ledger_to=h.id_account_head and tbl.date='+req.params.date+' and tbl.type='+req.params.type+'', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
@@ -144,11 +144,10 @@ router.get('/cashBookOp/:from_date/:id_account_head', function(req, res, next) {
   let from_date = req.params.from_date;
   let id_account_head = req.params.id_account_head;
 
-  db.query(`SELECT ROUND(SUM(debit)-SUM(credit)) AS balance FROM ( SELECT '1' AS slno, id_account_voucher AS id, CAST(amount AS CHAR) AS debit, '0' AS credit 			FROM account_voucher av, account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0 AND date<${from_date} and id_ledger_to=${id_account_head} UNION SELECT '2' AS slno, id_account_voucher AS id, '0' AS debit,			 CAST(amount AS CHAR) AS credit FROM account_voucher av, account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date<${from_date} and id_ledger_to=${id_account_head} )tbl`, function (err, rows, fields) {
+  db.query(`SELECT ROUND(SUM(debit)-SUM(credit)) AS balance FROM ( SELECT '1' AS slno, id_account_voucher AS id, CAST(amount AS CHAR) AS debit, '0' AS credit 			FROM account_voucher av, account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0 AND date<${from_date} and id_ledger_to=${id_account_head} UNION SELECT '2' AS slno, id_account_voucher AS id, '0' AS debit,			 CAST(amount AS CHAR) AS credit FROM account_voucher av, account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date<${from_date} and id_ledger_from=${id_account_head} )tbl`, function (err, rows, fields) {
 
     if (err) throw err
-
-     res.send(rows); 
+    res.send(rows); 
   })
 
 });
@@ -158,7 +157,7 @@ router.get('/cashBookDebit/:from_date/:to_date/:id_account_head', function(req, 
   let from_date = req.params.from_date;
   let id_account_head = req.params.id_account_head;
 
-  db.query(`SELECT NAME,narration,ROUND(SUM(debit)) AS debit FROM ( SELECT '1' AS slno, id_account_voucher AS id, (SELECT NAME FROM account_head WHERE id_account_head=av.id_ledger_from) AS NAME ,description AS narration,CAST(amount AS CHAR) AS debit FROM account_voucher av, account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head})tbl GROUP BY NAME`, function (err, rows, fields) {
+  db.query(`SELECT name,narration,ROUND(SUM(debit)) AS debit FROM ( SELECT '1' AS slno, id_account_voucher AS id, (SELECT name FROM account_head WHERE id_account_head=av.id_ledger_from) AS name ,description AS narration,CAST(amount AS CHAR) AS debit FROM account_voucher av, account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head})tbl GROUP BY NAME`, function (err, rows, fields) {
 
     if (err) throw err
 
@@ -172,68 +171,53 @@ router.get('/cashBookCredit/:from_date/:to_date/:id_account_head', function(req,
   let to_date = req.params.to_date;
   let from_date = req.params.from_date;
   let id_account_head = req.params.id_account_head;
-  db.query(`SELECT NAME,narration,ROUND(SUM(credit)) AS credit FROM (SELECT '2' AS slno, id_account_voucher AS id, (SELECT NAME FROM account_head WHERE id_account_head=av.id_ledger_to) AS NAME ,description AS narration,CAST(amount AS CHAR) AS credit FROM account_voucher av, account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head})tbl GROUP BY NAME`, function (err, rows, fields) {
-
+  db.query(`SELECT name,narration,ROUND(SUM(credit)) AS credit FROM (SELECT '2' AS slno, id_account_voucher AS id, (SELECT name FROM account_head WHERE id_account_head=av.id_ledger_to) AS name ,description AS narration,CAST(amount AS CHAR) AS credit FROM account_voucher av, account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_from=${id_account_head})tbl GROUP BY NAME`, function (err, rows, fields) {
+ 
     if (err) throw err
+    console.log(rows);
 
      res.send(rows); 
   })
 
+}); 
+
+router.get('/voucherDel/:id_account_voucher', function(req, res, next) {
+
+  var id_account_head = req.params.id_account_head;
+  var from_date = req.params.from_date;
+  var to_date = req.params.to_date;
+  var from_date =req.params.from_date;
+  var to_date = req.params.to_date;
+
+  db.query('select id_ledger_group where id_account_head='+id_account_head+'', function (err, rows, fields) {
+    if (err) throw err
+    
+    var ledger_type = rows[0].id_ledger_group;
+
+    var qryPurchase = (ledger_type == Constants.SUPPLIER) ? ` union select '3' as slno, '2' as vchr_type, id_purchase_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,narration,'Purchase' as type,cast(gross as char) as receipt,cast(payable as char) as payment from z_purchase_voucher  where date between ${from_date} and ${to_date} and id_account_head=${id_account_head}` : ``;
+    var qrySales = (ledger_type == Constants.SUPPLIER) ? ` union select '4' as slno, '3' as vchr_type, id_sales_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,narration,'Sales' as type,cast(received as char) as receipt,cast(gross as char) as payment from z_sales_voucher  where date between ${from_date} and ${to_date}  and id_account_head=${id_account_head}` : ``;
+    var qryPayroll = (ledger_type == Constants.STAFF) ? ` union select '3' as slno, '4' as vchr_type, id_payroll as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,type as narration,'Payroll' as type,cast(amount as char) as receipt,'0' as payment from z_payroll  where date between ${from_date} and ${to_date}  and id_account_head=${id_account_head}` : ``;
+    
+    var qry = `select '1' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,remarks as narration,type as type,'0' as receipt,cast(amount as char) as payment from z_account_voucher  where type='Payment' and date between ${from_date} and ${to_date}  and id_ledger=${id_account_head}
+             union
+             select '2' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,remarks as narration,type as type,cast(amount as char) as receipt,'0' as payment from z_account_voucher  where type='Receipt' and date between ${from_date} and ${to_date}  and id_ledger=${id_account_head} `;
+    
+    var qry_server = ` union 
+             select '5' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,description as narration,type as type,'0' as receipt,cast(amount as char) as payment from account_voucher  where type='Payment' and date between ${from_date} and ${to_date}  and id_ledger=${id_account_head}
+             union
+             select '6' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,description as narration,type as type,cast(amount as char) as receipt,'0' as payment from account_voucher  where type='Receipt' and date between ${from_date} and ${to_date}  and id_ledger=${id_account_head} `;
+    
+    
+    qry = `select * from ( ${qry} ${qry_server} ${qryPurchase} ${qrySales} ${qryPayroll} ) __tbl order by _date, slno`;
+                  
+    db.query(qry, function (err, rows, fields) {
+      if (err) throw err
+         
+      res.send(rows);
+    })
+  })
+
 });
+
 module.exports = router;
-
-/* Cash book Queries */
-var from_date ='', to_date = '';
-var qry_stock = `
-SELECT tbl.id_product,tbl.product,ifnull(round(purchased,2),0) as purchased,ifnull(round(sold,2),0) as sold,ifnull(round(purchased,2),0)-ifnull(round(sold,2),0) as stock, _tbl.rate, tbl.unit FROM
-                    (
-                        SELECT id_product,product, sum(sold) as sold, unit from
-                        (
-                            SELECT id_sales_voucher_item as id,i.id_product,i.name as product,unit,sum(quantity) as sold FROM z_sales_voucher sv, z_sales_voucher_item svi,  z_product i WHERE sv.id_sales_voucher=svi.id_sales_voucher and date between ${from_date} and ${to_date}  and svi.id_product=i.id_product " + conItem +  @"  GROUP By date,id_product
-                            UNION
-                            SELECT id_stock as id, i.id_product,i.name as product,unit,sum(st.quantity) as sold               FROM z_stock st,                                            z_product i WHERE st.id_product=i.id_product and st.type=1  and date between ${from_date} and ${to_date}  GROUP By date,i.id_product
-                            UNION
-                            SELECT id_invoice_items AS id, i.id_product, i.name AS product, '0' AS unit, SUM(kg) AS sold FROM invoice inv, invoice_items inv_i, z_product i WHERE inv.id_invoice=inv_i.id_invoice AND inv_i.id_product=i.id_product and date between ${from_date} and ${to_date} GROUP By date,i.id_product
-                        ) __tbl1  GROUP By id_product
-                    ) tbl
-                    left JOIN
-                    (
-                        SELECT id_product,unit, sum(round(purchased,2)) as purchased, round(avg(rate)) as rate from
-                        (
-			                SELECT id,id_product, purchased, rate, unit FROM (
-                                SELECT  id_purchase_voucher_item as id, unit,date,i.id_product,sum(quantity) as purchased, unit_price as rate FROM z_purchase_voucher pv, z_purchase_voucher_item pvi, z_product i where pvi.id_product=i.id_product and pv.id_purchase_voucher=pvi.id_purchase_voucher and date between ${from_date} and ${to_date}   GROUP BY date,id_product
-                                UNION
-                                SELECT id_stock as id,unit,date, i.id_product,sum(st.quantity) as purchased, rate FROM z_stock st, z_product i WHERE st.id_product=i.id_product and st.type=0 and date between ${from_date} and ${to_date} GROUP By date,i.id_product
-                            ) tbl3 ORDER BY DATE DESC LIMIT 18446744073709551615
-                         ) __tbl2 GROUP BY id_product
-                    ) _tbl
-                    ON 
-                    (tbl.id_product=_tbl.id_product) 
-                    " + conStock + @"
-                    UNION
-
-                   SELECT _tbl.id_product,_tbl.product,ifnull(round(purchased,2),0) as purchased,ifnull(round(sold,2),0) as sold,ifnull(round(purchased,2),0)-ifnull(round(sold,2),0) as stock, _tbl.rate, _tbl.unit FROM
-                    (
-                        SELECT id_product,product, sum(sold) as sold, unit from
-                        (
-                            SELECT id_sales_voucher_item as id,unit,i.id_product,i.name as product,sum(quantity) as sold FROM z_sales_voucher sv, z_sales_voucher_item svi,  z_product i WHERE sv.id_sales_voucher=svi.id_sales_voucher and date between ${from_date} and ${to_date}  and svi.id_product=i.id_product GROUP By date,id_product
-                            UNION
-                            SELECT id_stock as id,unit, i.id_product,i.name as product,sum(st.quantity) as sold               FROM z_stock st,                                            z_product i WHERE st.id_product=i.id_product and st.type=1  and date between ${from_date} and ${to_date} GROUP By date,i.id_product
-                            UNION
-                            SELECT id_invoice_items AS id, i.id_product, i.name AS product, '0' AS unit, SUM(kg) AS sold FROM invoice inv, invoice_items inv_i, z_product i WHERE inv.id_invoice=inv_i.id_invoice AND inv_i.id_product=i.id_product and date between ${from_date} and ${to_date}  GROUP By date,i.id_product
-                        ) __tbl1  GROUP By id_product
-                    ) tbl
-                    right JOIN
-                    (
-                        SELECT id_product, product, sum(round(purchased,2)) as purchased,  round(avg(rate)) as rate, unit from
-                        (
-			                SELECT id,id_product, product, purchased, rate, unit FROM (
-                                SELECT  id_purchase_voucher_item as id,unit, date, i.id_product,i.name as product,sum(quantity) as purchased, unit_price as rate FROM z_purchase_voucher pv, z_purchase_voucher_item pvi,  z_product i where pv.id_purchase_voucher=pvi.id_purchase_voucher  and pvi.id_product=i.id_product and date between ${from_date} and ${to_date}  GROUP BY date,id_product
-                                UNION
-                                SELECT id_stock as id,unit, date, i.id_product,i.name as product,sum(st.quantity) as purchased, rate FROM z_stock st, z_product i WHERE st.id_product=i.id_product and st.id_product=i.id_product and st.type=0 and date between ${from_date} and ${to_date}  GROUP By date,i.id_product
-                            ) tbl3 ORDER BY DATE DESC LIMIT 18446744073709551615
-                         ) __tbl2 GROUP BY id_product
-                    ) _tbl
-                    ON 
-                    (tbl.id_product=_tbl.id_product) 
-                    `;
+        
