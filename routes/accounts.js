@@ -182,24 +182,43 @@ router.get('/cashBookCredit/:from_date/:to_date/:id_account_head', function(req,
   })
 
 });
+
+router.get('/ledgerReport/:id_account_voucher', function(req, res, next) {
+
+  var id_account_head = req.params.id_account_head;
+  var from_date = req.params.from_date;
+  var to_date = req.params.to_date;
+  var from_date =req.params.from_date;
+  var to_date = req.params.to_date;
+
+  db.query('select id_ledger_group where id_account_head='+id_account_head+'', function (err, rows, fields) {
+    if (err) throw err
+    
+    var ledger_type = rows[0].id_ledger_group;
+
+    var qryPurchase = (ledger_type == Constants.SUPPLIER) ? ` union select '3' as slno, '2' as vchr_type, id_purchase_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,narration,'Purchase' as type,cast(gross as char) as receipt,cast(payable as char) as payment from z_purchase_voucher  where date between ${from_date} and ${to_date} and id_account_head=${id_account_head}` : ``;
+    var qrySales = (ledger_type == Constants.SUPPLIER) ? ` union select '4' as slno, '3' as vchr_type, id_sales_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,narration,'Sales' as type,cast(received as char) as receipt,cast(gross as char) as payment from z_sales_voucher  where date between ${from_date} and ${to_date}  and id_account_head=${id_account_head}` : ``;
+    var qryPayroll = (ledger_type == Constants.STAFF) ? ` union select '3' as slno, '4' as vchr_type, id_payroll as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,type as narration,'Payroll' as type,cast(amount as char) as receipt,'0' as payment from z_payroll  where date between ${from_date} and ${to_date}  and id_account_head=${id_account_head}` : ``;
+    
+    var qry = `select '1' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,remarks as narration,type as type,'0' as receipt,cast(amount as char) as payment from z_account_voucher  where type='Payment' and date between ${from_date} and ${to_date}  and id_ledger=${id_account_head}
+             union
+             select '2' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,remarks as narration,type as type,cast(amount as char) as receipt,'0' as payment from z_account_voucher  where type='Receipt' and date between ${from_date} and ${to_date}  and id_ledger=${id_account_head} `;
+    
+    var qry_server = ` union 
+             select '5' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,description as narration,type as type,'0' as receipt,cast(amount as char) as payment from account_voucher  where type='Payment' and date between ${from_date} and ${to_date}  and id_ledger=${id_account_head}
+             union
+             select '6' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,description as narration,type as type,cast(amount as char) as receipt,'0' as payment from account_voucher  where type='Receipt' and date between ${from_date} and ${to_date}  and id_ledger=${id_account_head} `;
+    
+    
+    qry = `select * from ( ${qry} ${qry_server} ${qryPurchase} ${qrySales} ${qryPayroll} ) __tbl order by _date, slno`;
+                  
+    db.query(qry, function (err, rows, fields) {
+      if (err) throw err
+        
+      res.send(rows);
+    })
+  })
+
+});
+
 module.exports = router;
-
-/* Cash book Queries */
-var from_date ='', to_date = '', id_account_head = '';
-var qry_debit = `SELECT NAME,narration,ROUND(SUM(debit)) AS debit FROM 
-                  (
-                      SELECT '1' AS slno, id_account_voucher AS id, (SELECT NAME FROM z_account_head WHERE id_account_head=av.id_ledger_from) AS NAME ,description AS narration,CAST(amount AS CHAR) AS debit FROM account_voucher av, z_account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head}
-                  )tbl GROUP BY NAME`;
-
-                  
-var qry_credit = `SELECT NAME,narration,ROUND(SUM(credit)) AS credit FROM 
-                  (
-                      SELECT '2' AS slno, id_account_voucher AS id, (SELECT NAME FROM z_account_head WHERE id_account_head=av.id_ledger_to) AS NAME ,description AS narration,CAST(amount AS CHAR) AS credit FROM account_voucher av, z_account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head}
-                  )tbl GROUP BY NAME`;
-                  
-var qry_opening = `SELECT ROUND(SUM(debit)-SUM(credit)) AS balance FROM 
-                  (
-                      SELECT '1' AS slno, id_account_voucher AS id, CAST(amount AS CHAR) AS debit, '0' AS credit 			FROM account_voucher av, z_account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0   AND date<${from_date} and id_ledger_to=${id_account_head}
-                      UNION
-                      SELECT '2' AS slno, id_account_voucher AS id, '0' AS debit,			 CAST(amount AS CHAR) AS credit FROM account_voucher av, z_account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date<${from_date} and id_ledger_to=${id_account_head}
-                  )tbl`;
