@@ -4,24 +4,99 @@ const fs = require('fs');
 var multer  = require('multer')
 var upload = multer({ dest: 'uploads/' })
 
-
-
 router.post('/roughInvoice', function(req, res, next) {
+ 
   let date            = req.body.date;
   let consignee       = req.body.consignee;
   let consigner       = req.body.consigner;
   let port_load       = req.body.port_load;
-  
-  db.query(`insert into rough_invoice(date, port_load, consigner, consignee) values('${date}', '${port_load}', '${consigner}', '${consignee}')`,function (err, result) {
-    if (err) throw err;
+  let items           = req.body.items;
+  let id_rough_invoice=req.body.id_rough_invoice;
+  if((req.body.id_rough_invoice) == '0')  
+  {
+  var qry=`insert into rough_invoice(date, port_load, consigner, consignee) values('${date}', '${port_load}', '${consigner}', '${consignee}')`;
+        
+    db.query(qry, function (err, result) {
+      if (err) throw err;
+      items.forEach(item => {
+        var _qry=`insert into rough_invoice_items(id_rough_invoice, id_product, kg, box, total) values ('${result.insertId}','${item.id_product}', '${item.kg}', '${item.box}', '${item.kg*item.box}')`;
     
-    res.send(result);
+        db.query(_qry);
+      });
+
+      res.send({
+        id_rough_invoice: result.insertId,
+        isUpdate : false
+      });
+    })
+  }
+  else
+  {
+    var qry=`update rough_invoice set  date='${date}', port_load='${port_load}', consigner='${consigner}', consignee='${consignee}' where id_rough_invoice=`+req.body.id_rough_invoice+``;
+    
+    db.query(qry, function (err, result) {
+      if (err) throw err;
+      qryDel = `delete from rough_invoice_items where id_rough_invoice=${req.body.id_rough_invoice}`;
+
+      db.query(qryDel, function (err, result) {
+        items.forEach(item => {
+          var _qry=`insert into rough_invoice_items (id_rough_invoice, id_product, kg, box, total) values ('${req.body.id_rough_invoice}','${item.id_product}', '${item.kg}', '${item.box}', '${item.kg*item.box}')`;
+          db.query(_qry);
+        });
+      });
+
+      res.send({
+        id_rough_invoice: req.body.id_rough_invoice,   
+        isUpdate : true
+      });
+    })
+  }
+});
+
+
+router.get('/roughInvoice/:id_rough_invoice', function(req, res, next) {
+
+  db.query('select * from rough_invoice where id_rough_invoice='+req.params.id_rough_invoice+'', function (err, rows, fields) {
+    if (err) throw err
+    
+    db.query('select * from rough_invoice_items where id_rough_invoice='+req.params.id_rough_invoice+'', function (err, _rows, fields) {
+      if (err) throw err
+
+      mainRows = [];
+      rowItems = [];
+      _rows.forEach(_row => {
+        rowItems.push({
+          id_product : _row.id_product,
+          kg : _row.kg,
+          box : _row.box
+        })
+      });
+
+      mainRows = [{
+        date             : rows[0].date,
+        consignee        : rows[0].consignee,
+        consigner        : rows[0].consigner,
+        port_load        : rows[0].port_load,        
+        items            : rowItems
+      }]
+      console.log(mainRows);
+      res.send(mainRows); 
+    })
   })
 });
 
 router.get('/invoiceList', function(req, res, next) {
 
   db.query('select id_invoice,invoice_no,consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from invoice', function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
+router.get('/roughInvoiceList', function(req, res, next) {
+
+  db.query('select id_rough_invoice,consigner,consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from rough_invoice', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
