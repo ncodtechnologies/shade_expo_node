@@ -76,9 +76,12 @@ router.get('/ledger/:id_ledger_group', function(req, res, next) {
   let qry = '';
   if(req.params.id_ledger_group != "")
   {
-    qry=' and l.id_ledger_group='+req.params.id_ledger_group+'';
-    if(req.params.id_ledger_group < 0)
+    var ids = req.params.id_ledger_group.split(",");
+    qry=` and l.id_ledger_group in (${ids.join(",")})`;
+    if(ids[0] < 0)
       qry=` and l.id_ledger_group!=${-1*req.params.id_ledger_group}`;
+
+    console.log(qry);
   }
 
   db.query('select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group '+ qry +'', function (err, rows, fields) {
@@ -182,8 +185,8 @@ router.get('/cashBookCredit/:from_date/:to_date/:id_account_head', function(req,
 });
 
 router.get('/ledgerReport/:from_date/:to_date/:id_ledger', function(req, res, next) {
-console.log(req.params)
- 
+  console.log(req.params)
+
   var id_account_head = req.params.id_ledger;
   var from_date = req.params.from_date;
   var to_date = req.params.to_date;
@@ -192,25 +195,29 @@ console.log(req.params)
 
   db.query(`select id_ledger_group from account_head where id_account_head=${id_account_head}`, function (err, rows, fields) {
     if (err) throw err
-    
+
     var ledger_type = rows[0].id_ledger_group;
 
     var qryPurchase = (ledger_type == Constants.SUPPLIER) ? ` union select '3' as slno, '2' as vchr_type, id_purchase_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,narration,'Purchase' as type,cast(gross as char) as receipt,cast(payable as char) as payment from z_purchase_voucher  where date between ${from_date} and ${to_date} and id_account_head=${id_account_head}` : ``;
-    var qrySales = (ledger_type == Constants.SUPPLIER) ? ` union select '4' as slno, '3' as vchr_type, id_sales_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,narration,'Sales' as type,cast(received as char) as receipt,cast(gross as char) as payment from z_sales_voucher  where date between ${from_date} and ${to_date}  and id_supplier=${id_account_head}` : ``;
-    var qryPayroll = (ledger_type == Constants.STAFF) ? ` union select '3' as slno, '4' as vchr_type, id_payroll as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,type as narration,'Payroll' as type,cast(amount as char) as receipt,'0' as payment from payroll  where date between ${from_date} and ${to_date}  and id_ledger=${id_account_head}` : ``;
-    
-    var qry = `select '1' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,remarks as narration,type as type,'0' as receipt,cast(amount as char) as payment from z_account_voucher  where type='Payment' and date between ${from_date} and ${to_date}  and id_ledger=${id_account_head}
+    var qrySales = (ledger_type == Constants.SUPPLIER || ledger_type == Constants.CONSIGNER)
+                   ?  ` union select '4' as slno, '3' as vchr_type, id_sales_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,narration,'Sales' as type,cast(received as char) as receipt,cast(gross as char) as payment from z_sales_voucher  where date between ${from_date} and ${to_date}  and id_account_head=${id_account_head}` : ``;
+    var qryPayroll = (ledger_type == Constants.STAFF) ? ` union select '3' as slno, '4' as vchr_type, id_payroll as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,type as narration,'Payroll' as type,cast(amount as char) as receipt,'0' as payment from z_payroll  where date between ${from_date} and ${to_date}  and id_account_head=${id_account_head}` : ``;
+    var qryInvoice = (ledger_type == Constants.CONSIGNEE) ? `union select  '7' as slno, '7' as vchr_type, ii.id_invoice as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date, concat('Invoice No: ',i.invoice_no) as narration,'Invoice' as type,'0' as receipt,cast(sum(amount*kg) as char) as payment  FROM  invoice i, invoice_items ii,account_head ah where i.consignee = ah.id_account_head  AND  i.id_invoice = ii.id_invoice and date between ${from_date} and ${to_date} and id_account_head=${id_account_head} and amount>0 group by i.id_invoice ` : "";
+    var qryInvDiscount = (ledger_type == Constants.CONSIGNEE) ? `union select  '8' as slno, '8' as vchr_type, i.id_invoice as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date, concat('Invoice No: ',i.invoice_no) as narration,'Invoice' as type,cast(discount as char) as receipt,'0' as payment  FROM  invoice i, account_head ah where i.consignee = ah.id_account_head  and date between ${from_date} and ${to_date} and id_account_head=${id_account_head} and discount>0 group by i.id_invoice  ` : "";
+
+    var qry = `select '1' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,remarks as narration,type as type,'0' as receipt,cast(amount as char) as payment from z_account_voucher  where  date between ${from_date} and ${to_date}  and id_ledger=${id_account_head}
              union
-             select '2' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,remarks as narration,type as type,cast(amount as char) as receipt,'0' as payment from z_account_voucher  where type='Receipt' and date between ${from_date} and ${to_date}  and id_ledger=${id_account_head} `;
-    
+             select '2' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,remarks as narration,type as type,cast(amount as char) as receipt,'0' as payment from z_account_voucher  where  date between ${from_date} and ${to_date}  and id_ledger=${id_account_head} `;
+
     var qry_server = ` union 
-             select '5' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,description as narration,type as type,'0' as receipt,cast(amount as char) as payment from account_voucher  where type='Payment' and date between ${from_date} and ${to_date}  and id_ledger_to=${id_account_head}
+             select '5' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,description as narration,type as type,'0' as receipt,cast(amount as char) as payment from account_voucher  where date between ${from_date} and ${to_date}  and id_ledger_to=${id_account_head}
              union
-             select '6' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,description as narration,type as type,cast(amount as char) as receipt,'0' as payment from account_voucher  where type='Receipt' and date between ${from_date} and ${to_date}  and id_ledger_from=${id_account_head} `;
-    
-    
-    qry = `select * from ( ${qry} ${qry_server} ${qryPurchase} ${qrySales} ${qryPayroll} ) __tbl order by _date, slno`;
-                  
+             select '6' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,description as narration,type as type,cast(amount as char) as receipt,'0' as payment from account_voucher  where  date between ${from_date} and ${to_date}  and id_ledger_from=${id_account_head} `;
+
+    qry = `select * from ( ${qry} ${qry_server} ${qryPurchase} ${qrySales} ${qryPayroll} ${qryInvoice} ${qryInvDiscount} ) __tbl order by _date, slno`;
+
+    console.log(qry);
+
     db.query(qry, function (err, rows, fields) {
       if (err) throw err
         
@@ -234,21 +241,24 @@ router.get('/ledgerReportOp/:from_date/:to_date/:id_ledger', function(req, res, 
       
       var ledger_type = rows[0].id_ledger_group;
   
-      var qryPurchase = (ledger_type == Constants.SUPPLIER) ? ` union select '3' as slno, '2' as vchr_type, id_purchase_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,narration,'Purchase' as type,cast(gross as char) as receipt,cast(payable as char) as payment from z_purchase_voucher  where date between ${from_date} and ${to_date} and id_account_head=${id_account_head}` : ``;
-      var qrySales = (ledger_type == Constants.SUPPLIER) ? ` union select '4' as slno, '3' as vchr_type, id_sales_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,narration,'Sales' as type,cast(received as char) as receipt,cast(gross as char) as payment from z_sales_voucher  where date between ${from_date} and ${to_date}  and id_supplier=${id_account_head}` : ``;
-      var qryPayroll = (ledger_type == Constants.STAFF) ? ` union select '3' as slno, '4' as vchr_type, id_payroll as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,type as narration,'Payroll' as type,cast(amount as char) as receipt,'0' as payment from payroll  where date between ${from_date} and ${to_date}  and id_ledger=${id_account_head}` : ``;
-      
-      var qry = `select '1' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,remarks as narration,type as type,'0' as receipt,cast(amount as char) as payment from z_account_voucher  where type='Payment' and date between ${from_date} and ${to_date}  and id_ledger=${id_account_head}
+      var qryPurchase = (ledger_type == Constants.SUPPLIER) ? ` union select '3' as slno, '2' as vchr_type, id_purchase_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,narration,'Purchase' as type,cast(gross as char) as receipt,cast(payable as char) as payment from z_purchase_voucher  where date < ${from_date} and id_account_head=${id_account_head}` : ``;
+      var qrySales = (ledger_type == Constants.SUPPLIER || ledger_type == Constants.CONSIGNER)
+                     ? ` union select '4' as slno, '3' as vchr_type, id_sales_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,narration,'Sales' as type,cast(received as char) as receipt,cast(gross as char) as payment from z_sales_voucher  where date < ${from_date} and id_account_head=${id_account_head}` : ``;
+      var qryPayroll = (ledger_type == Constants.STAFF) ? ` union select '3' as slno, '4' as vchr_type, id_payroll as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,type as narration,'Payroll' as type,cast(amount as char) as receipt,'0' as payment from z_payroll  where date between ${from_date} and id_account_head=${id_account_head}` : ``;
+      var qryInvoice = (ledger_type == Constants.CONSIGNEE) ? `union select  '7' as slno, '7' as vchr_type, ii.id_invoice as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date, concat('Invoice No: ',i.invoice_no) as narration,'Invoice' as type,'0' as receipt,cast(sum(amount*kg) as char) as payment  FROM  invoice i, invoice_items ii,account_head ah where i.consignee = ah.id_account_head  AND  i.id_invoice = ii.id_invoice and date < ${from_date} and id_account_head=${id_account_head} and amount>0 group by i.id_invoice ` : "";
+      var qryInvDiscount = (ledger_type == Constants.CONSIGNEE) ? `union select  '8' as slno, '8' as vchr_type, i.id_invoice as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date, concat('Invoice No: ',i.invoice_no) as narration,'Invoice' as type,cast(discount as char) as receipt,'0' as payment  FROM  invoice i, account_head ah where i.consignee = ah.id_account_head  and date < ${from_date}  and id_account_head=${id_account_head} and discount>0 group by i.id_invoice  ` : "";
+      var qryOpening = `union select  '9' as slno, '9' as vchr_type, '0' as id_voucher,'' as date ,'' as _date, '' as narration,'' as type,opening_balance as receipt,'0' as payment  FROM  account_head ah where  id_account_head=${id_account_head}  `;
+
+      var qry = `select '1' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,remarks as narration,type as type,'0' as receipt,cast(amount as char) as payment from z_account_voucher  where date < ${from_date} and id_ledger=${id_account_head}
                union
-               select '2' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,remarks as narration,type as type,cast(amount as char) as receipt,'0' as payment from z_account_voucher  where type='Receipt' and date between ${from_date} and ${to_date}  and id_ledger=${id_account_head} `;
+               select '2' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,remarks as narration,type as type,cast(amount as char) as receipt,'0' as payment from z_account_voucher  where date < ${from_date}  and id_ledger=${id_account_head} `;
       
       var qry_server = ` union 
-               select '5' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,description as narration,type as type,'0' as receipt,cast(amount as char) as payment from account_voucher  where type='Payment' and date between ${from_date} and ${to_date}  and id_ledger_to=${id_account_head}
+               select '5' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,description as narration,type as type,'0' as receipt,cast(amount as char) as payment from account_voucher  where date < ${from_date}  and id_ledger_to=${id_account_head}
                union
-               select '6' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,description as narration,type as type,cast(amount as char) as receipt,'0' as payment from account_voucher  where type='Receipt' and date between ${from_date} and ${to_date}  and id_ledger_from=${id_account_head} `;
+               select '6' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,description as narration,type as type,cast(amount as char) as receipt,'0' as payment from account_voucher  where date < ${from_date} and id_ledger_from=${id_account_head} `;
       
-      
-      qry = `select (ifnull(sum(receipt),0) - ifnull(sum(payment),0)) as opening_bal from ( ${qry} ${qry_server} ${qryPurchase} ${qrySales} ${qryPayroll} ) __tbl order by _date, slno`;
+      qry = `select (ifnull(sum(receipt),0) - ifnull(sum(payment),0)) as opening_bal from ( ${qry} ${qry_server} ${qryPurchase} ${qrySales} ${qryPayroll} ${qryInvoice} ${qryInvDiscount} ${qryOpening} ) __tbl order by _date, slno`;
                     
       db.query(qry, function (err, rows, fields) {
         if (err) throw err
@@ -257,7 +267,7 @@ router.get('/ledgerReportOp/:from_date/:to_date/:id_ledger', function(req, res, 
       })
     })
   
-  });
+});
 
 module.exports = router;
         

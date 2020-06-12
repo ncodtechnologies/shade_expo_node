@@ -6,15 +6,18 @@ var upload = multer({ dest: 'uploads/' })
 
 router.post('/roughInvoice', function(req, res, next) {
  
-  let date            = req.body.date;
-  let consignee       = req.body.consignee;
-  let consigner       = req.body.consigner;
-  let port_load       = req.body.port_load;
-  let items           = req.body.items;
-  let id_rough_invoice=req.body.id_rough_invoice;
+  let date              = req.body.date;
+  let consignee         = req.body.consignee;
+  let consigner         = req.body.consigner;
+  let consignee_address = req.body.consignee_address;
+  let consigner_address = req.body.consigner_address;
+  let port_load         = req.body.port_load;
+  let items             = req.body.items;
+  let id_rough_invoice  =req.body.id_rough_invoice;
+  
   if((req.body.id_rough_invoice) == '0')  
   {
-  var qry=`insert into rough_invoice(date, port_load, consigner, consignee) values('${date}', '${port_load}', '${consigner}', '${consignee}')`;
+  var qry=`insert into rough_invoice(date, port_load, consigner, consignee, consigner_address, consignee_address) values('${date}', '${port_load}', '${consigner}', '${consignee}', '${consigner_address}', '${consignee_address}')`;
         
     db.query(qry, function (err, result) {
       if (err) throw err;
@@ -32,7 +35,7 @@ router.post('/roughInvoice', function(req, res, next) {
   }
   else
   {
-    var qry=`update rough_invoice set  date='${date}', port_load='${port_load}', consigner='${consigner}', consignee='${consignee}' where id_rough_invoice=`+req.body.id_rough_invoice+``;
+    var qry=`update rough_invoice set  date='${date}', port_load='${port_load}', consigner='${consigner}', consignee='${consignee}', consigner_address='${consigner_address}', consignee_address='${consignee_address}' where id_rough_invoice=`+req.body.id_rough_invoice+``;
     
     db.query(qry, function (err, result) {
       if (err) throw err;
@@ -73,11 +76,13 @@ router.get('/roughInvoice/:id_rough_invoice', function(req, res, next) {
       });
 
       mainRows = [{
-        date             : rows[0].date,
-        consignee        : rows[0].consignee,
-        consigner        : rows[0].consigner,
-        port_load        : rows[0].port_load,        
-        items            : rowItems
+        date              : rows[0].date,
+        consignee         : rows[0].consignee,
+        consigner         : rows[0].consigner,
+        consignee_address : rows[0].consignee_address,
+        consigner_address : rows[0].consigner_address,
+        port_load         : rows[0].port_load,        
+        items             : rowItems
       }]
       console.log(mainRows);
       res.send(mainRows); 
@@ -87,7 +92,7 @@ router.get('/roughInvoice/:id_rough_invoice', function(req, res, next) {
 
 router.get('/invoiceList', function(req, res, next) {
 
-  db.query('select id_invoice,invoice_no,consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from invoice', function (err, rows, fields) {
+  db.query('select id_invoice,invoice_no,(select name from account_head where id_account_head = consignee) as consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from invoice', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
@@ -96,7 +101,7 @@ router.get('/invoiceList', function(req, res, next) {
 });
 router.get('/roughInvoiceList', function(req, res, next) {
 
-  db.query('select id_rough_invoice,consigner,consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from rough_invoice', function (err, rows, fields) {
+  db.query('select id_rough_invoice,(select name from account_head where id_account_head = i.consigner) as consigner,(select name from account_head where id_account_head = i.consignee) as consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from rough_invoice i', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
@@ -123,26 +128,29 @@ router.get('/invoice/:id_invoice', function(req, res, next) {
       });
 
       mainRows = [{
-        invoice_no       : rows[0].invoice_no,
-        date             : rows[0].date,
-        order_no         : rows[0].order_no , 
-        buyer_date       : rows[0].buyer_date ,
-        exporter         : rows[0].exporter ,
-        consignee        : rows[0].consignee ,
-        other            : rows[0].other ,
-        buyer            : rows[0].buyer ,
-        country_origin   : rows[0].country_origin ,
-        country_final    : rows[0].country_final ,
-        pre_carriage     : rows[0].pre_carriage ,
-        receipt_place    : rows[0].receipt_place ,
-        vessel_no        : rows[0].vessel_no ,
-        port_load        : rows[0].port_load ,
-        port_discharge   : rows[0].port_discharge ,
-        final_destination: rows[0].final_destination ,
-        marks            : rows[0].marks ,
-        container_no     : rows[0].container_no ,
-        awb_no           : rows[0].awb_no , 
-        terms            : rows[0].terms ,
+        invoice_no        : rows[0].invoice_no,
+        date              : rows[0].date,
+        order_no          : rows[0].order_no , 
+        buyer_date        : rows[0].buyer_date ,
+        consigner         : rows[0].consigner ,
+        consignee         : rows[0].consignee ,
+        consigner_address : rows[0].consigner_address ,
+        consignee_address : rows[0].consignee_address ,
+        other             : rows[0].other ,
+        buyer             : rows[0].buyer ,
+        country_origin    : rows[0].country_origin ,
+        country_final     : rows[0].country_final ,
+        pre_carriage      : rows[0].pre_carriage ,
+        receipt_place     : rows[0].receipt_place ,
+        vessel_no         : rows[0].vessel_no ,
+        port_load         : rows[0].port_load ,
+        port_discharge    : rows[0].port_discharge ,
+        final_destination : rows[0].final_destination ,
+        marks             : rows[0].marks ,
+        container_no      : rows[0].container_no ,
+        awb_no            : rows[0].awb_no , 
+        terms             : rows[0].terms ,
+        discount          : rows[0].discount ,
         items : rowItems
       }]
 
@@ -154,14 +162,15 @@ router.get('/invoice/:id_invoice', function(req, res, next) {
 
 });
 
-
 router.post('/invoice', function(req, res, next) {
   let invoice_no        = req.body.invoice_no;
   let order_no          = req.body.order_no;
   let date              = req.body.date;
   let buyer_date        = req.body.buyer_date;
-  let exporter          = req.body.exporter;
+  let consigner         = req.body.consigner;
   let consignee         = req.body.consignee;
+  let consigner_address = req.body.consigner_address;
+  let consignee_address = req.body.consignee_address;
   let other             = req.body.other;
   let buyer             = req.body.buyer;
   let country_origin    = req.body.country_origin;
@@ -177,10 +186,11 @@ router.post('/invoice', function(req, res, next) {
   let awb_no            = req.body.awb_no;
   let terms             = req.body.terms;
   let items             = req.body.items;
+  let discount          = req.body.discount;
 
   if((req.body.id_invoice) == '0')  
   {
-    var qry=`insert into invoice (invoice_no, order_no, date, buyer_date, exporter, consignee, other,buyer,country_origin, country_final, pre_carriage, receipt_place, vessel_no,port_load,port_discharge, final_destination, marks, container_no, awb_no, terms) values ('${invoice_no}','${order_no}', '${date}', '${buyer_date}', '${exporter}', '${consignee}', '${other}', '${buyer}', '${country_origin}', '${country_final}', '${pre_carriage}', '${receipt_place}','${vessel_no}', '${port_load}','${port_discharge}', '${final_destination}', '${marks}', '${container_no}', '${awb_no}', '${terms}')`;
+    var qry=`insert into invoice (invoice_no, order_no, date, buyer_date, consigner, consignee, consigner_address, consignee_address, other,buyer,country_origin, country_final, pre_carriage, receipt_place, vessel_no,port_load,port_discharge, final_destination, marks, container_no, awb_no, terms, discount) values ('${invoice_no}','${order_no}', '${date}', '${buyer_date}', '${consigner}', '${consignee}', '${consigner_address}', '${consignee_address}', '${other}', '${buyer}', '${country_origin}', '${country_final}', '${pre_carriage}', '${receipt_place}','${vessel_no}', '${port_load}','${port_discharge}', '${final_destination}', '${marks}', '${container_no}', '${awb_no}', '${terms}', '${discount}')`;
         
     db.query(qry, function (err, result) {
       if (err) throw err;
@@ -198,7 +208,7 @@ router.post('/invoice', function(req, res, next) {
   }
   else
   {
-    var qry=`update invoice set invoice_no='${invoice_no}',order_no='${order_no}', date='${date}', buyer_date='${buyer_date}', exporter='${exporter}', consignee='${consignee}', other='${other}', buyer='${buyer}', country_origin='${country_origin}', country_final='${country_final}', pre_carriage='${pre_carriage}', receipt_place='${receipt_place}',vessel_no='${vessel_no}', port_load='${port_load}',port_discharge='${port_discharge}', final_destination='${final_destination}', marks='${marks}', container_no='${container_no}', awb_no='${awb_no}', terms='${terms}' where id_invoice=`+req.body.id_invoice+``;
+    var qry=`update invoice set invoice_no='${invoice_no}',order_no='${order_no}', date='${date}', buyer_date='${buyer_date}', consigner='${consigner}', consignee='${consignee}', consigner_address='${consigner_address}', consignee_address='${consignee_address}', other='${other}', buyer='${buyer}', country_origin='${country_origin}', country_final='${country_final}', pre_carriage='${pre_carriage}', receipt_place='${receipt_place}',vessel_no='${vessel_no}', port_load='${port_load}',port_discharge='${port_discharge}', final_destination='${final_destination}', marks='${marks}', container_no='${container_no}', awb_no='${awb_no}', terms='${terms}', discount='${discount}' where id_invoice=`+req.body.id_invoice+``;
     
     db.query(qry, function (err, result) {
       if (err) throw err;
@@ -221,7 +231,6 @@ router.post('/invoice', function(req, res, next) {
 });
 
 
-
 router.get('/invoice/invLabour/:id_invoice', function(req, res, next) {
 
   db.query('select * from  invoice_labour l, account_head a where l.id_account_head=a.id_account_head and id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
@@ -235,7 +244,7 @@ router.get('/invoice/invLabour/:id_invoice', function(req, res, next) {
 
 router.get('/invoice/invPacking/:id_invoice', function(req, res, next) {
 
-  db.query('select * from  invoice_packing_list l, product p where l.id_product=p.id_product and id_invoice='+req.params.id_invoice+'' , function (err, rows, fields) {
+  db.query('select * from  invoice_packing_list l, product p where l.id_product=p.id_product and id_invoice='+req.params.id_invoice+' order by pack_no' , function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
@@ -243,6 +252,22 @@ router.get('/invoice/invPacking/:id_invoice', function(req, res, next) {
 
 });
 
+router.post('/invoice/packing', function(req, res, next) {
+  if(req.body.packing)
+  {
+    if(req.body.packing.length>0)
+      db.query(`delete from invoice_packing_list where id_invoice=${req.body.packing[0].id_invoice} `, function (err, rows, fields) {
+        if (err) throw err
+      });
+    req.body.packing.forEach(e => {
+      console.log(e.pack_no);
+      db.query(`INSERT into invoice_packing_list (id_product , kg, id_invoice, pack_no ) values ('${e.id_product}','${e.kg}','${e.id_invoice}','${e.pack_no}')`, function (err, rows, fields) {
+        if (err) throw err
+      });
+    });
+  }
+  res.send(req.body);
+});
 
 router.get('/invoice/invPackingExp/:id_invoice', function(req, res, next) {
 
@@ -257,8 +282,8 @@ router.get('/invoice/invPackingExp/:id_invoice', function(req, res, next) {
 
 router.post('/invoice/expense', function(req, res, next) {
   let date            = req.body.date;
-  let id_ledger_from  = 0;
-  let id_ledger_to    = req.body.id_ledger_to;
+  let id_ledger_from  = req.body.id_ledger_to;
+  let id_ledger_to    = 0;
   let description     = req.body.description;
   let rate            = req.body.rate;
   let amount          = req.body.amount;
@@ -275,9 +300,9 @@ router.post('/invoice/expense', function(req, res, next) {
 
 
 router.get('/invoice/expense/:id_invoice', function(req, res, next) {
-var id_invoice=req.params.id_invoice;
+  var id_invoice=req.params.id_invoice;
 
-  db.query(`select e.id_account_voucher,a.name as ledger,DATE_FORMAT(e.date ,'%d/%m/%Y') as date,e.description,e.rate,e.amount,e.id_invoice from account_voucher e, account_head a where e.id_ledger_to=a.id_account_head  and id_invoice=${id_invoice}`, function (err, rows, fields) {
+  db.query(`select e.id_account_voucher,a.name as ledger,DATE_FORMAT(e.date ,'%d/%m/%Y') as date,e.description,e.rate,e.amount,e.id_invoice from account_voucher e, account_head a where e.id_ledger_from=a.id_account_head  and id_invoice=${id_invoice}`, function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows);  
