@@ -2,5 +2,7 @@
     "SUPPLIER" : 2,
     "STAFF" : 3,
     "ACCOUNT" : 5,
+    "CONSIGNER" : 7,
+    "CONSIGNEE" : 8,
     "SERVER_LEDGER_LIMIT" : 10000
 }
