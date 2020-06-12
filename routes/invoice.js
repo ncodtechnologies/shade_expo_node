@@ -11,7 +11,6 @@ router.post('/roughInvoice', function(req, res, next) {
   let consigner       = req.body.consigner;
   let port_load       = req.body.port_load;
   let items           = req.body.items;
-  let id_rough_invoice=req.body.id_rough_invoice;
   if((req.body.id_rough_invoice) == '0')  
   {
   var qry=`insert into rough_invoice(date, port_load, consigner, consignee) values('${date}', '${port_load}', '${consigner}', '${consignee}')`;
@@ -59,7 +58,7 @@ router.get('/roughInvoice/:id_rough_invoice', function(req, res, next) {
   db.query('select * from rough_invoice where id_rough_invoice='+req.params.id_rough_invoice+'', function (err, rows, fields) {
     if (err) throw err
     
-    db.query('select * from rough_invoice_items where id_rough_invoice='+req.params.id_rough_invoice+'', function (err, _rows, fields) {
+    db.query('select * from rough_invoice where id_rough_invoice='+req.params.id_rough_invoice+'', function (err, _rows, fields) {
       if (err) throw err
 
       mainRows = [];
@@ -68,7 +67,7 @@ router.get('/roughInvoice/:id_rough_invoice', function(req, res, next) {
         rowItems.push({
           id_product : _row.id_product,
           kg : _row.kg,
-          box : _row.box
+          box : _row.amount
         })
       });
 
