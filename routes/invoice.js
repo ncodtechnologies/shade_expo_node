@@ -13,6 +13,7 @@ router.post('/roughInvoice', function(req, res, next) {
   let consigner_address = req.body.consigner_address;
   let port_load         = req.body.port_load;
   let items             = req.body.items;
+  let airwayItems       = req.body.airwayItems;
   let id_rough_invoice  =req.body.id_rough_invoice;
   
   if((req.body.id_rough_invoice) == '0')  
@@ -26,7 +27,8 @@ router.post('/roughInvoice', function(req, res, next) {
     
         db.query(_qry);
       });
-
+      
+   
       res.send({
         id_rough_invoice: result.insertId,
         isUpdate : false
@@ -301,7 +303,7 @@ router.post('/invoice/expense', function(req, res, next) {
 });
 
 
-router.post('/invoice/expense', function(req, res, next) {
+router.post('/invoice/fright', function(req, res, next) {
 
   let id_invoice      = req.body.id_invoice;
   let expense         = req.body.expense;
@@ -314,7 +316,15 @@ router.post('/invoice/expense', function(req, res, next) {
   })
 });
 
+router.get('/invoice/frightExp/:id_invoice', function(req, res, next) {
 
+  db.query('select * from  fright_expense where id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
 router.get('/invoice/expense/:id_invoice', function(req, res, next) {
   var id_invoice=req.params.id_invoice;
 
