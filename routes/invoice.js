@@ -5,7 +5,7 @@ var multer  = require('multer')
 var upload = multer({ dest: 'uploads/' })
 
 router.post('/roughInvoice', function(req, res, next) {
- 
+ console.log(req.body)
   let date              = req.body.date;
   let consignee         = req.body.consignee;
   let consigner         = req.body.consigner;
@@ -14,7 +14,7 @@ router.post('/roughInvoice', function(req, res, next) {
   let port_load         = req.body.port_load;
   let items             = req.body.items;
   let airwayItems       = req.body.airwayItems;
-  let id_rough_invoice  =req.body.id_rough_invoice;
+  let id_rough_invoice  = req.body.id_rough_invoice;
   
   if((req.body.id_rough_invoice) == '0')  
   {
@@ -28,6 +28,11 @@ router.post('/roughInvoice', function(req, res, next) {
         db.query(_qry);
       });
       
+      airwayItems.forEach(item => {
+        var _qry=`insert into airway_items(id_airway_items, id_product, kg, box, total) values ('${result.insertId}','${item.id_product}', '${item.kg}', '${item.box}', '${item.kg*item.box}')`;
+    
+        db.query(_qry);
+      });
    
       res.send({
         id_rough_invoice: result.insertId,
@@ -42,10 +47,18 @@ router.post('/roughInvoice', function(req, res, next) {
     db.query(qry, function (err, result) {
       if (err) throw err;
       qryDel = `delete from rough_invoice_items where id_rough_invoice=${req.body.id_rough_invoice}`;
+      qryDelAir = `delete from airway_items where id_rough_invoice=${req.body.id_rough_invoice}`;
 
       db.query(qryDel, function (err, result) {
         items.forEach(item => {
           var _qry=`insert into rough_invoice_items (id_rough_invoice, id_product, kg, box, total) values ('${req.body.id_rough_invoice}','${item.id_product}', '${item.kg}', '${item.box}', '${item.kg*item.box}')`;
+          db.query(_qry);
+        });
+      });
+
+      db.query(qryDelAir, function (err, result) {
+        items.forEach(item => {
+          var _qry=`insert into airway_items (id_rough_invoice, id_product, kg, box, total) values ('${req.body.id_rough_invoice}','${item.id_product}', '${item.kg}', '${item.box}', '${item.kg*item.box}')`;
           db.query(_qry);
         });
       });
@@ -64,7 +77,7 @@ router.get('/roughInvoice/:id_rough_invoice', function(req, res, next) {
   db.query('select * from rough_invoice where id_rough_invoice='+req.params.id_rough_invoice+'', function (err, rows, fields) {
     if (err) throw err
     
-    db.query('select * from rough_invoice where id_rough_invoice='+req.params.id_rough_invoice+'', function (err, _rows, fields) {
+    db.query('select * from rough_invoice_items where id_rough_invoice='+req.params.id_rough_invoice+'', function (err, _rows, fields) {
       if (err) throw err
 
       mainRows = [];
@@ -73,7 +86,7 @@ router.get('/roughInvoice/:id_rough_invoice', function(req, res, next) {
         rowItems.push({
           id_product : _row.id_product,
           kg : _row.kg,
-          box : _row.amount
+          box : _row.box
         })
       });
 
@@ -90,6 +103,16 @@ router.get('/roughInvoice/:id_rough_invoice', function(req, res, next) {
       res.send(mainRows); 
     })
   })
+});
+
+router.get('/roughInvoice/airway/:id_rough_invoice', function(req, res, next) {
+
+  db.query('select * from airway_items where id_rough_invoice='+req.params.id_rough_invoice+'', function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
 });
 
 router.get('/invoiceList', function(req, res, next) {
@@ -309,7 +332,7 @@ router.post('/invoice/fright', function(req, res, next) {
   let expense         = req.body.expense;
   let amount          = req.body.amount;
   
-  db.query(`insert into fright_expense (id_invoice ,expense,amount) values( ${id_invoice},'${expense}','${amount}')`,function (err, result) {
+  db.query(`insert into freight_expense (id_invoice ,expense,amount) values( ${id_invoice},'${expense}','${amount}')`,function (err, result) {
     if (err) throw err;
     
     res.send(result);
@@ -318,7 +341,7 @@ router.post('/invoice/fright', function(req, res, next) {
 
 router.get('/invoice/frightExp/:id_invoice', function(req, res, next) {
 
-  db.query('select * from  fright_expense where id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
+  db.query('select * from  freight_expense where id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
