@@ -29,7 +29,7 @@ router.post('/roughInvoice', function(req, res, next) {
       });
       
       airwayItems.forEach(item => {
-        var _qry=`insert into airway_items(id_airway_items, id_product, kg, box, total) values ('${result.insertId}','${item.id_product}', '${item.kg}', '${item.box}', '${item.kg*item.box}')`;
+        var _qry=`insert into airway_items(id_rough_invoice, id_product, kg, box, total) values ('${result.insertId}','${item.id_product}', '${item.kg}', '${item.box}', '${item.kg*item.box}')`;
     
         db.query(_qry);
       });
@@ -58,7 +58,7 @@ router.post('/roughInvoice', function(req, res, next) {
 
       db.query(qryDelAir, function (err, result) {
         items.forEach(item => {
-          var _qry=`insert into airway_items (id_rough_invoice, id_product, kg, box, total) values ('${req.body.id_rough_invoice}','${item.id_product}', '${item.kg}', '${item.box}', '${item.kg*item.box}')`;
+          var _qry=`insert into airway_items (id_rough_invoice, id_product, kg, box, total) values (${req.body.id_rough_invoice},'${item.id_product}', '${item.kg}', '${item.box}', '${item.kg*item.box}')`;
           db.query(_qry);
         });
       });
@@ -102,18 +102,38 @@ router.get('/roughInvoice/:id_rough_invoice', function(req, res, next) {
       console.log(mainRows);
       res.send(mainRows); 
     })
+    
   })
 });
+
 
 router.get('/roughInvoice/airway/:id_rough_invoice', function(req, res, next) {
 
-  db.query('select * from airway_items where id_rough_invoice='+req.params.id_rough_invoice+'', function (err, rows, fields) {
-    if (err) throw err
+    db.query('select * from airway_items where id_rough_invoice='+req.params.id_rough_invoice+'', function (err, _rows, fields) {
+      if (err) throw err
 
-     res.send(rows); 
-  })
+      mainRows = [];
+      rowItems = [];
+      _rows.forEach(_row => {
+        rowItems.push({
+          id_product : _row.id_product,
+          kg : _row.kg,
+          box : _row.box
+        })
+      });
 
+      mainRows = [{       
+        airwayItems             : rowItems
+      }]
+      console.log(mainRows);
+      res.send(mainRows); 
+    })
+    
+ 
 });
+
+
+
 
 router.get('/invoiceList', function(req, res, next) {
 
