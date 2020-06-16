@@ -61,6 +61,25 @@ router.get('/ledgerGroup', function(req, res, next) {
 
 });
 
+router.get('/sundryCreditor/:id_ledger_group', function(req, res, next) {
+
+  db.query('select * from ledger_group', function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
+router.get('/sundryDebtor/:id_ledger_group', function(req, res, next) {
+
+  db.query('select * from ledger_group', function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
+
 router.get('/ledger', function(req, res, next) {
 
   db.query('select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group', function (err, rows, fields) {
