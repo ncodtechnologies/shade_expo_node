@@ -71,7 +71,6 @@ router.post('/roughInvoice', function(req, res, next) {
   }
 });
 
-
 router.get('/roughInvoice/:id_rough_invoice', function(req, res, next) {
 
   db.query('select * from rough_invoice where id_rough_invoice='+req.params.id_rough_invoice+'', function (err, rows, fields) {
