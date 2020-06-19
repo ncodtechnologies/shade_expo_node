@@ -7,6 +7,7 @@ var upload = multer({ dest: 'uploads/' })
 router.post('/roughInvoice', function(req, res, next) {
  console.log(req.body)
   let date              = req.body.date;
+  let invoice_no        = req.body.invoice_no;
   let consignee         = req.body.consignee;
   let consigner         = req.body.consigner;
   let consignee_address = req.body.consignee_address;
@@ -18,7 +19,7 @@ router.post('/roughInvoice', function(req, res, next) {
   
   if((req.body.id_rough_invoice) == '0')  
   {
-  var qry=`insert into rough_invoice(date, port_load, consigner, consignee, consigner_address, consignee_address) values('${date}', '${port_load}', '${consigner}', '${consignee}', '${consigner_address}', '${consignee_address}')`;
+  var qry=`insert into rough_invoice(date, port_load, consigner, consignee, consigner_address, consignee_address,invoice_no) values('${date}', '${port_load}', '${consigner}', '${consignee}', '${consigner_address}', '${consignee_address}', '${invoice_no}')`;
         
     db.query(qry, function (err, result) {
       if (err) throw err;
@@ -42,7 +43,7 @@ router.post('/roughInvoice', function(req, res, next) {
   }
   else
   {
-    var qry=`update rough_invoice set  date='${date}', port_load='${port_load}', consigner='${consigner}', consignee='${consignee}', consigner_address='${consigner_address}', consignee_address='${consignee_address}' where id_rough_invoice=`+req.body.id_rough_invoice+``;
+    var qry=`update rough_invoice set  date='${date}', port_load='${port_load}', consigner='${consigner}', consignee='${consignee}', consigner_address='${consigner_address}', consignee_address='${consignee_address}', invoice_no='${invoice_no}' where id_rough_invoice=`+req.body.id_rough_invoice+``;
     
     db.query(qry, function (err, result) {
       if (err) throw err;
