@@ -11,6 +11,7 @@ var productRouter = require('./routes/product');
 var payrollRouter = require('./routes/payroll');
 var accountsRouter = require('./routes/accounts');
 var purchaseRouter = require('./routes/purchase');
+var notificationRouter = require('./routes/notification');
 var syncRouter = require('./routes/sync');
 var mysql = require('mysql')
 
@@ -43,6 +44,7 @@ app.use('/product', productRouter);
 app.use('/payroll', payrollRouter);
 app.use('/accounts', accountsRouter);
 app.use('/purchase', purchaseRouter);
+app.use('/notification', notificationRouter);
 app.use('/sync', syncRouter);
 
 // catch 404 and forward to error handler
