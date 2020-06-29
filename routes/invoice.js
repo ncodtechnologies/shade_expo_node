@@ -57,7 +57,7 @@ router.post('/roughInvoice', function(req, res, next) {
       });
 
       db.query(qryDelAir, function (err, result) {
-        items.forEach(item => {
+        airwayItems.forEach(item => {
           var _qry=`insert into airway_items (id_rough_invoice, id_product, kg, box, total) values (${req.body.id_rough_invoice},'${item.id_product}', '${item.kg}', '${item.box}', '${item.kg*item.box}')`;
           db.query(_qry);
         });
