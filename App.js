@@ -5,6 +5,7 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var cors = require('cors');
 
+var loginRouter = require('./routes/login');
 var indexRouter = require('./routes/index');
 var invoiceRouter = require('./routes/invoice');
 var productRouter = require('./routes/product');
@@ -39,6 +40,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 global.db = db;
 
 app.use('/', indexRouter);
+app.use('/login', loginRouter);
 app.use('/invoice', invoiceRouter);
 app.use('/product', productRouter);
 app.use('/payroll', payrollRouter);
