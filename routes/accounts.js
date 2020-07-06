@@ -53,7 +53,7 @@ router.post('/ledgerGroup', function(req, res, next) {
 
 router.get('/ledgerGroup', function(req, res, next) {
 
-  db.query('select * from ledger_group', function (err, rows, fields) {
+  db.query('select * from ledger_group ', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
@@ -82,7 +82,7 @@ router.get('/sundryDebtor/:id_ledger_group', function(req, res, next) {
 
 router.get('/ledger', function(req, res, next) {
 
-  db.query('select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group', function (err, rows, fields) {
+  db.query('select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group order by a.name', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
@@ -105,7 +105,7 @@ router.get('/ledger/:id_ledger_group/:activePage', function(req, res, next) {
     console.log(qry);
   }
   qry1 = `select count(*) as totalCount from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group `+ qry +``;
-  qry2 = `select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group `+ qry +` limit ${numOfItems},10 `;
+  qry2 = `select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group `+ qry +`  order by a.name limit ${numOfItems},10 `;
   db.query(qry1, function (err, rows, fields) {
     if (err) throw err
 
@@ -137,7 +137,7 @@ router.get('/ledger/:id_ledger_group', function(req, res, next) {
     console.log(qry);
   }
 
-  db.query(`select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group `+ qry +` `, function (err, rows, fields) {
+  db.query(`select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group `+ qry +`  order by a.name `, function (err, rows, fields) {
     if (err) throw err
 
     res.send(rows); 

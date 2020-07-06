@@ -142,7 +142,7 @@ router.get('/invoiceList/:activePage', function(req, res, next) {
   db.query(`select count(*) as totalCount from invoice  `, function (err, rows, fields) {
     if (err) throw err
 
-      db.query(`select id_invoice,invoice_no,(select name from account_head where id_account_head = consignee) as consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from invoice limit ${numOfItems},10 `, function (err, rows_, fields) {
+      db.query(`select id_invoice,invoice_no,(select name from account_head where id_account_head = consignee) as consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from invoice order by id_invoice DESC limit ${numOfItems},10 `, function (err, rows_, fields) {
         if (err) throw err
             
         var data = {};
@@ -162,7 +162,7 @@ router.get('/roughInvoiceList/:activePage', function(req, res, next) {
   db.query(`select count(*) as totalCount from rough_invoice  `, function (err, rows, fields) {
     if (err) throw err
 
-    db.query(`select id_rough_invoice,(select name from account_head where id_account_head = i.consigner) as consigner,(select name from account_head where id_account_head = i.consignee) as consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from rough_invoice i limit ${numOfItems},10`, function (err, rows_, fields) {
+    db.query(`select id_rough_invoice,(select name from account_head where id_account_head = i.consigner) as consigner,(select name from account_head where id_account_head = i.consignee) as consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from rough_invoice i  order by i.id_rough_invoice DESC limit ${numOfItems},10`, function (err, rows_, fields) {
       if (err) throw err
       data ={};
       const items=[];
