@@ -17,7 +17,7 @@ router.post('/ledgerCreate', function(req, res, next) {
       if (err) throw err
       
       var id_account_head = rows[0].id_account_head != null ? rows[0].id_account_head : Constants.SERVER_LEDGER_LIMIT;
-      var qry=`insert into account_head (id_account_head, code ,name,id_ledger_group,opening_balance,address,phone) values('${id_account_head}','${code}','${name}',${id}, '${op}', '${address}', '${phone}')`;
+      var qry=`insert into account_head (id_account_head, code ,name,id_ledger_group,opening_balance,address,phone,modified_by,modified_date) values('${id_account_head}','${code}','${name}',${id}, '${op}', '${address}', '${phone}','ADMIN',NOW())`;
       
       db.query(qry,function (err, result) {
         if (err) throw err;
@@ -28,7 +28,7 @@ router.post('/ledgerCreate', function(req, res, next) {
   }
   else
   {
-    var qry=`update account_head set code='${code}' ,name='${name}',id_ledger_group = ${id},opening_balance = '${op}',address ='${address}',phone ='${phone}' where id_account_head=`+req.body.id_account_head+``;
+    var qry=`update account_head set code='${code}' ,name='${name}',id_ledger_group = ${id},opening_balance = '${op}',address ='${address}',phone ='${phone}',modified_by ='ADMIN',modified_date=NOW() where id_account_head=`+req.body.id_account_head+``;
   
     db.query(qry,function (err, result) {
       if (err) throw err;
@@ -60,26 +60,6 @@ router.get('/ledgerGroup', function(req, res, next) {
   })
 
 });
-
-router.get('/sundryCreditor/:id_ledger_group', function(req, res, next) {
-
-  db.query('select * from ledger_group', function (err, rows, fields) {
-    if (err) throw err
-
-     res.send(rows); 
-  })
-
-});
-router.get('/sundryDebtor/:id_ledger_group', function(req, res, next) {
-
-  db.query('select * from ledger_group', function (err, rows, fields) {
-    if (err) throw err
-
-     res.send(rows); 
-  })
-
-});
-
 router.get('/ledger', function(req, res, next) {
 
   db.query('select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group order by a.name', function (err, rows, fields) {
@@ -95,7 +75,7 @@ router.get('/ledger/:id_ledger_group/:activePage', function(req, res, next) {
 
   let numOfItems = (req.params.activePage -1) * 10
   let qry = '';
-  if(req.params.id_ledger_group != "")
+  if(req.params.id_ledger_group != "0")
   {
     var ids = req.params.id_ledger_group.split(",");
     qry=` and l.id_ledger_group in (${ids.join(",")})`;
@@ -334,6 +314,160 @@ router.get('/ledgerReportOp/:from_date/:to_date/:id_ledger', function(req, res, 
     })
   
 });
+
+router.get('/sundryCreditor/:id_ledger_group', function(req, res, next) {
+
+  var condition = ` and _lg.id_ledger_group=${req.params.id_ledger_group}`;
+  if(req.params.id_ledger_group == "0")
+    condition = "";
+
+  var qry = `  SELECT tbl.paid,account_head, tbl.received,_tbl.ledger_group,opening_balance, ((_tbl.opening_balance+IFNULL(received,0)-IFNULL(paid,0))) AS closing_balance  FROM 
+  (
+      SELECT tbl_paid.id_ledger, tbl_paid.paid, tbl_received.received, tbl_paid.id_ledger AS id_account_head FROM
+      (
+SELECT * FROM (
+SELECT id_ledger_from AS id_ledger, SUM(amount) AS paid FROM account_voucher av WHERE amount>0 GROUP BY id_ledger_from
+UNION
+SELECT id_ledger, SUM(amount) AS paid FROM z_account_voucher av WHERE TYPE='Payment' AND amount>0 GROUP BY id_ledger
+UNION
+SELECT id_account_head AS id_ledger, gross AS paid FROM z_sales_voucher GROUP BY id_ledger
+UNION
+SELECT i.consignee AS id_ledger, SUM(amount) AS paid FROM  invoice i, invoice_items ii WHERE i.id_invoice = ii.id_invoice GROUP BY i.consignee
+) tbl1
+) tbl_paid
+      LEFT JOIN 
+      (
+SELECT * FROM (
+SELECT id_ledger_to AS id_ledger, SUM(amount) AS received FROM account_voucher av WHERE amount>0 GROUP BY id_ledger_to
+UNION
+SELECT id_ledger, SUM(amount) AS received FROM z_account_voucher av WHERE TYPE='Receipt' AND amount>0 GROUP BY id_ledger
+UNION
+SELECT id_account_head AS id_ledger, gross AS received FROM z_purchase_voucher GROUP BY id_ledger
+UNION
+SELECT id_account_head AS id_ledger, amount AS received FROM z_payroll GROUP BY id_ledger 
+UNION
+SELECT i.consignee AS id_ledger, SUM(discount) AS received FROM  invoice i WHERE discount>0 GROUP BY i.consignee
+) tbl2
+) tbl_received 
+      ON tbl_paid.id_ledger=tbl_received.id_ledger
+
+      UNION
+
+      SELECT tbl_received.id_ledger, tbl_paid.paid, tbl_received.received, tbl_paid.id_ledger AS id_account_head FROM
+      (
+SELECT * FROM (
+SELECT id_ledger_from AS id_ledger, SUM(amount) AS paid FROM account_voucher av WHERE amount>0 GROUP BY id_ledger_from
+UNION
+SELECT id_ledger, SUM(amount) AS paid FROM z_account_voucher av WHERE TYPE='Payment' AND amount>0 GROUP BY id_ledger
+UNION
+SELECT id_account_head AS id_ledger, gross AS paid FROM z_sales_voucher GROUP BY id_ledger
+) tbl1
+) tbl_paid
+      RIGHT JOIN 
+      (
+SELECT * FROM (
+SELECT id_ledger_to AS id_ledger, SUM(amount) AS received FROM account_voucher av WHERE amount>0 GROUP BY id_ledger_to
+UNION
+SELECT id_ledger, SUM(amount) AS received FROM z_account_voucher av WHERE TYPE='Receipt' AND amount>0 GROUP BY id_ledger
+UNION
+SELECT id_account_head AS id_ledger, gross AS received FROM z_purchase_voucher GROUP BY id_ledger
+UNION
+SELECT id_account_head AS id_ledger, amount AS paid FROM z_payroll GROUP BY id_ledger 
+) tbl2
+) tbl_received 
+      ON tbl_paid.id_ledger=tbl_received.id_ledger
+  ) tbl
+  
+  RIGHT JOIN
+  (
+   SELECT _ah.name AS account_head,_ah.id_ledger_group, _lg.name AS ledger_group, id_account_head,opening_balance FROM account_head _ah, ledger_group _lg WHERE _lg.id_ledger_group=_ah.id_ledger_group and _lg.id_ledger_group not in ` + Constants.NONBALANCE + condition + `
+) _tbl
+ON tbl.id_account_head=_tbl.id_account_head where  (_tbl.opening_balance+IFNULL(received,0)-IFNULL(paid,0))>0 
+`;
+  db.query(qry, function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
+
+router.get('/sundryDebtor/:id_ledger_group', function(req, res, next) {
+
+  var condition = ` and _lg.id_ledger_group=${req.params.id_ledger_group}`;
+  if(req.params.id_ledger_group == "0")
+    condition = "";
+
+  var qry = `  SELECT tbl.paid,account_head, tbl.received,_tbl.ledger_group,opening_balance, ((_tbl.opening_balance+IFNULL(received,0)-IFNULL(paid,0))) AS closing_balance  FROM 
+    (
+      SELECT tbl_paid.id_ledger, tbl_paid.paid, tbl_received.received, tbl_paid.id_ledger AS id_account_head FROM
+      (
+SELECT * FROM (
+SELECT id_ledger_from AS id_ledger, SUM(amount) AS paid FROM account_voucher av WHERE amount>0 GROUP BY id_ledger_from
+UNION
+SELECT id_ledger, SUM(amount) AS paid FROM z_account_voucher av WHERE TYPE='Payment' AND amount>0 GROUP BY id_ledger
+UNION
+SELECT id_account_head AS id_ledger, gross AS paid FROM z_sales_voucher GROUP BY id_ledger
+UNION
+SELECT i.consignee AS id_ledger, SUM(amount) AS paid FROM  invoice i, invoice_items ii WHERE i.id_invoice = ii.id_invoice GROUP BY i.consignee
+) tbl1
+) tbl_paid
+      LEFT JOIN 
+      (
+SELECT * FROM (
+SELECT id_ledger_to AS id_ledger, SUM(amount) AS received FROM account_voucher av WHERE amount>0 GROUP BY id_ledger_to
+UNION
+SELECT id_ledger, SUM(amount) AS received FROM z_account_voucher av WHERE TYPE='Receipt' AND amount>0 GROUP BY id_ledger
+UNION
+SELECT id_account_head AS id_ledger, gross AS received FROM z_purchase_voucher GROUP BY id_ledger
+UNION
+SELECT id_account_head AS id_ledger, amount AS received FROM z_payroll GROUP BY id_ledger 
+UNION
+SELECT i.consignee AS id_ledger, SUM(discount) AS received FROM  invoice i WHERE discount>0 GROUP BY i.consignee
+) tbl2
+) tbl_received 
+      ON tbl_paid.id_ledger=tbl_received.id_ledger
+
+      UNION
+
+      SELECT tbl_received.id_ledger, tbl_paid.paid, tbl_received.received, tbl_paid.id_ledger AS id_account_head FROM
+      (
+SELECT * FROM (
+SELECT id_ledger_from AS id_ledger, SUM(amount) AS paid FROM account_voucher av WHERE amount>0 GROUP BY id_ledger_from
+UNION
+SELECT id_ledger, SUM(amount) AS paid FROM z_account_voucher av WHERE TYPE='Payment' AND amount>0 GROUP BY id_ledger
+UNION
+SELECT id_account_head AS id_ledger, gross AS paid FROM z_sales_voucher GROUP BY id_ledger
+) tbl1
+) tbl_paid
+      RIGHT JOIN 
+      (
+SELECT * FROM (
+SELECT id_ledger_to AS id_ledger, SUM(amount) AS received FROM account_voucher av WHERE amount>0 GROUP BY id_ledger_to
+UNION
+SELECT id_ledger, SUM(amount) AS received FROM z_account_voucher av WHERE TYPE='Receipt' AND amount>0 GROUP BY id_ledger
+UNION
+SELECT id_account_head AS id_ledger, gross AS received FROM z_purchase_voucher GROUP BY id_ledger
+UNION
+SELECT id_account_head AS id_ledger, amount AS paid FROM z_payroll GROUP BY id_ledger 
+) tbl2
+) tbl_received 
+      ON tbl_paid.id_ledger=tbl_received.id_ledger
+  ) tbl
+  
+  RIGHT JOIN
+  (
+   SELECT _ah.name AS account_head,_ah.id_ledger_group, _lg.name AS ledger_group, id_account_head,opening_balance FROM account_head _ah, ledger_group _lg WHERE _lg.id_ledger_group=_ah.id_ledger_group and _lg.id_ledger_group not in ` + Constants.NONBALANCE + condition + `
+) _tbl ON tbl.id_account_head=_tbl.id_account_head where  (_tbl.opening_balance+IFNULL(received,0)-IFNULL(paid,0))<0 
+`;
+  db.query(qry, function (err, rows, fields) {
+    if (err) throw err
+
+     res.send(rows); 
+  })
+
+});
+
 
 module.exports = router;
         

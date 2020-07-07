@@ -2,8 +2,10 @@
     "DESKTOP_ACCOUNT" : 1,
     "SUPPLIER" : 2,
     "STAFF" : 3,
+    "PURCHASE_EXPENSES" : 4,
     "ACCOUNT" : 5,
     "CONSIGNER" : 7,
     "CONSIGNEE" : 8,
-    "SERVER_LEDGER_LIMIT" : 10000
+    "SERVER_LEDGER_LIMIT" : 10000,
+    "NONBALANCE" : "(4)"
 }

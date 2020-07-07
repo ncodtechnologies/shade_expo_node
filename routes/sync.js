@@ -5,8 +5,10 @@ var multer  = require('multer')
 var upload = multer({ dest: 'uploads/' })
 
 function syncDb() {
-
-  db.query('INSERT INTO account_head (SELECT * FROM z_account_head where id_account_head not in (select id_account_head from account_head))', function (err, rows, fields) {
+   var qry = `INSERT INTO account_head (SELECT * FROM z_account_head WHERE modified_by = 'DESKTOP') ON DUPLICATE KEY UPDATE
+   NAME=VALUES(NAME), CODE=VALUES(CODE),id_ledger_group=VALUES(id_ledger_group), opening_balance=VALUES(opening_balance),
+   phone=VALUES(phone), address=VALUES(address), modified_by=VALUES(modified_by), modidfied_date=VALUES(modified_date)`;
+  db.query(qry, function (err, rows, fields) {
     if (err) throw err
 
   })
