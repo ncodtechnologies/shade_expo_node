@@ -77,7 +77,7 @@ function restoreDb() {
   router.get('/backup', function(req, res, next) {
     const { exec } = require("child_process");
   
-    exec("mysqldump -u root -pNc0d#Mysql shade_app account_head ledger_group invoice invoice_items payroll account_voucher > sync/syncDown.sql", (error, stdout, stderr) => {
+    exec("mysqldump -u root -pNc0d#Mysql shade_app account_head ledger_group invoice invoice_items payroll account_voucher notification > sync/syncDown.sql", (error, stdout, stderr) => {
         if (error) {
             console.log(`error: ${error.message}`);
             return;

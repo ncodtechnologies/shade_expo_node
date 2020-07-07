@@ -8,7 +8,7 @@ router.post('/notification', function(req, res, next) {
   let description     = req.body.description;
   let isread          = 0;
   
-  db.query(`insert into notification (date, description, isread) values('${date}', '${description}', ${isread})`,function (err, result) {
+  db.query(`insert into notification (date, description, isread) values(CURDATE(), '${description}', ${isread})`,function (err, result) {
     if (err) throw err;
     
     res.send(result);
