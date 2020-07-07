@@ -135,21 +135,40 @@ router.get('/roughInvoice/airway/:id_rough_invoice', function(req, res, next) {
 
 
 
-router.get('/invoiceList', function(req, res, next) {
+router.get('/invoiceList/:activePage', function(req, res, next) {
+  let numOfItems = (req.params.activePage -1) * 10
 
-  db.query('select id_invoice,invoice_no,(select name from account_head where id_account_head = consignee) as consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from invoice', function (err, rows, fields) {
+  db.query(`select count(*) as totalCount from invoice  `, function (err, rows, fields) {
     if (err) throw err
 
-     res.send(rows); 
+      db.query(`select id_invoice,invoice_no,(select name from account_head where id_account_head = consignee) as consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from invoice order by id_invoice DESC limit ${numOfItems},10 `, function (err, rows_, fields) {
+        if (err) throw err
+            
+        var data = {};
+        data.totalCount = rows[0].totalCount;
+        data.items = rows_;
+        
+        res.send(data); 
+        console.log(data);
+      })
   })
 
 });
-router.get('/roughInvoiceList', function(req, res, next) {
+router.get('/roughInvoiceList/:activePage', function(req, res, next) {
 
-  db.query('select id_rough_invoice,(select name from account_head where id_account_head = i.consigner) as consigner,(select name from account_head where id_account_head = i.consignee) as consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from rough_invoice i', function (err, rows, fields) {
+  let numOfItems = (req.params.activePage -1) * 10
+
+  db.query(`select count(*) as totalCount from rough_invoice  `, function (err, rows, fields) {
     if (err) throw err
 
-     res.send(rows); 
+    db.query(`select id_rough_invoice,(select name from account_head where id_account_head = i.consigner) as consigner,(select name from account_head where id_account_head = i.consignee) as consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from rough_invoice i  order by i.id_rough_invoice DESC limit ${numOfItems},10`, function (err, rows_, fields) {
+      if (err) throw err
+      data ={};
+      const items=[];
+      data.items=rows_;
+      data.totalCount=rows[0].totalCount;
+     res.send(data); 
+   })
   })
 
 });
@@ -504,3 +523,6 @@ router.get('/invoice/getDoc/:id_document', function(req, res){
 });
 
 module.exports = router;
+
+//select * from hhb limit pagenumber(3) , number of item(10)
+//pagenumber * 10

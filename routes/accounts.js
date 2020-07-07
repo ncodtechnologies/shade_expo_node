@@ -53,7 +53,7 @@ router.post('/ledgerGroup', function(req, res, next) {
 
 router.get('/ledgerGroup', function(req, res, next) {
 
-  db.query('select * from ledger_group', function (err, rows, fields) {
+  db.query('select * from ledger_group ', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
@@ -82,7 +82,7 @@ router.get('/sundryDebtor/:id_ledger_group', function(req, res, next) {
 
 router.get('/ledger', function(req, res, next) {
 
-  db.query('select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group', function (err, rows, fields) {
+  db.query('select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group order by a.name', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
@@ -90,8 +90,42 @@ router.get('/ledger', function(req, res, next) {
 
 });
 
+
+router.get('/ledger/:id_ledger_group/:activePage', function(req, res, next) {
+
+  let numOfItems = (req.params.activePage -1) * 10
+  let qry = '';
+  if(req.params.id_ledger_group != "")
+  {
+    var ids = req.params.id_ledger_group.split(",");
+    qry=` and l.id_ledger_group in (${ids.join(",")})`;
+    if(ids[0] < 0)
+      qry=` and l.id_ledger_group!=${-1*req.params.id_ledger_group}`;
+
+    console.log(qry);
+  }
+  qry1 = `select count(*) as totalCount from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group `+ qry +``;
+  qry2 = `select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group `+ qry +`  order by a.name limit ${numOfItems},10 `;
+  db.query(qry1, function (err, rows, fields) {
+    if (err) throw err
+
+      db.query(qry2, function (err, rows_, fields) {
+        if (err) throw err
+
+        data ={};
+        const items=[];
+        data.totalCount=rows[0].totalCount;
+        data.items=rows_
+
+        res.send(data); 
+        console.log(data)
+      })
+  })
+
+});
+
 router.get('/ledger/:id_ledger_group', function(req, res, next) {
-  
+
   let qry = '';
   if(req.params.id_ledger_group != "")
   {
@@ -103,11 +137,10 @@ router.get('/ledger/:id_ledger_group', function(req, res, next) {
     console.log(qry);
   }
 
-  db.query('select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group '+ qry +'', function (err, rows, fields) {
-
+  db.query(`select *, a.name as account_head from account_head a, ledger_group l where a.id_ledger_group=l.id_ledger_group `+ qry +`  order by a.name `, function (err, rows, fields) {
     if (err) throw err
 
-     res.send(rows); 
+    res.send(rows); 
   })
 
 });
@@ -174,16 +207,26 @@ router.get('/cashBookOp/:from_date/:id_account_head', function(req, res, next) {
 
 });
 
-router.get('/cashBookDebit/:from_date/:to_date/:id_account_head', function(req, res, next) {
+router.get('/cashBookDebit/:from_date/:to_date/:id_account_head/:activePage', function(req, res, next) {
   let to_date = req.params.to_date;
   let from_date = req.params.from_date;
   let id_account_head = req.params.id_account_head;
+  let numOfItems = (req.params.activePage -1) * 10
 
-  db.query(`SELECT name,narration,ROUND(SUM(debit)) AS debit FROM ( SELECT '1' AS slno, id_account_voucher AS id, (SELECT name FROM account_head WHERE id_account_head=av.id_ledger_from) AS name ,description AS narration,CAST(amount AS CHAR) AS debit FROM account_voucher av, account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head})tbl GROUP BY NAME`, function (err, rows, fields) {
+  db.query(`SELECT count(*) as totalCount from (SELECT name,narration,ROUND(SUM(debit)) AS debit FROM ( SELECT '1' AS slno, id_account_voucher AS id, (SELECT name FROM account_head WHERE id_account_head=av.id_ledger_from) AS name ,description AS narration,CAST(amount AS CHAR) AS debit FROM account_voucher av, account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head})tbl GROUP BY NAME)tbl`, function (err, rows, fields) {
 
     if (err) throw err
+     
+    db.query(`SELECT name,narration,ROUND(SUM(debit)) AS debit FROM ( SELECT '1' AS slno, id_account_voucher AS id, (SELECT name FROM account_head WHERE id_account_head=av.id_ledger_from) AS name ,description AS narration,CAST(amount AS CHAR) AS debit FROM account_voucher av, account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head})tbl GROUP BY NAME limit ${numOfItems},10`, function (err, rows_, fields) {
 
-     res.send(rows); 
+      if (err) throw err
+
+      data ={};
+      data.items=rows_;
+      data.totalCountDebit=rows[0].totalCount;
+     res.send(data);  
+     console.log(data)
+    })
   })
 
 });
@@ -196,22 +239,19 @@ router.get('/cashBookCredit/:from_date/:to_date/:id_account_head', function(req,
   db.query(`SELECT name,narration,ROUND(SUM(credit)) AS credit FROM (SELECT '2' AS slno, id_account_voucher AS id, (SELECT name FROM account_head WHERE id_account_head=av.id_ledger_to) AS name ,description AS narration,CAST(amount AS CHAR) AS credit FROM account_voucher av, account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_from=${id_account_head})tbl GROUP BY NAME`, function (err, rows, fields) {
  
     if (err) throw err
-    console.log(rows);
 
      res.send(rows); 
   })
 
 });
 
-router.get('/ledgerReport/:from_date/:to_date/:id_ledger', function(req, res, next) {
+router.get('/ledgerReport/:from_date/:to_date/:id_ledger/:activePage', function(req, res, next) {
   console.log(req.params)
-
   var id_account_head = req.params.id_ledger;
   var from_date = req.params.from_date;
   var to_date = req.params.to_date;
- // var from_date =req.params.from_date;
- // var to_date = req.params.to_date;
 
+  let numOfItems = (req.params.activePage -1) * 10
   db.query(`select id_ledger_group from account_head where id_account_head=${id_account_head}`, function (err, rows, fields) {
     if (err) throw err
 
@@ -233,14 +273,21 @@ router.get('/ledgerReport/:from_date/:to_date/:id_ledger', function(req, res, ne
              union
              select '6' as slno, '1' as vchr_type, id_account_voucher as id_voucher,DATE_FORMAT(date ,'%d/%m/%Y') as date ,date as _date,description as narration,'Receipt' as type,cast(amount as char) as receipt,'0' as payment from account_voucher  where  date between ${from_date} and ${to_date}  and id_ledger_from=${id_account_head} `;
 
-    qry = `select * from ( ${qry} ${qry_server} ${qryPurchase} ${qrySales} ${qryPayroll} ${qryInvoice} ${qryInvDiscount} ) __tbl order by _date, slno`;
+    qry1 = `select count(*) as totalCount from ( ${qry} ${qry_server} ${qryPurchase} ${qrySales} ${qryPayroll} ${qryInvoice} ${qryInvDiscount} ) __tbl order by _date, slno `;
+    qry2 = `select * from ( ${qry} ${qry_server} ${qryPurchase} ${qrySales} ${qryPayroll} ${qryInvoice} ${qryInvDiscount} ) __tbl order by _date, slno  limit ${numOfItems},10`;
 
-    console.log(qry);
+    //console.log(qry1);
 
-    db.query(qry, function (err, rows, fields) {
+    db.query(qry1, function (err, rows, fields) {
       if (err) throw err
-        
-      res.send(rows);
+      db.query(qry2, function (err, rows_, fields) {
+        if (err) throw err
+        data ={};
+        const items=[];
+        data.items=rows_;
+        data.totalCount=rows[0].totalCount;
+      res.send(data);
+      })
     })
   })
 

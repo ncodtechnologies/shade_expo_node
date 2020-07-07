@@ -18,7 +18,7 @@ router.post('/notification', function(req, res, next) {
 
 router.get('/notification/', function(req, res, next) {
 
-  db.query('select id_notification,DATE_FORMAT(date, "%d/%m/%Y") as date,description,isread from notification ', function (err, rows, fields) {
+  db.query('select id_notification,DATE_FORMAT(date, "%d/%m/%Y") as date,description,isread from notification order by id_notification DESC ', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
