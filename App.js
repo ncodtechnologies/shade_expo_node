@@ -19,7 +19,7 @@ var mysql = require('mysql')
 const db = mysql.createConnection ({
   host: 'localhost',
   user: 'root',
-  password: 'Nc0d#Mysql',
+  password: '',
   database: 'shade_app',
   port: 3306
 });
