@@ -1,5 +1,6 @@
 {
     "DESKTOP_ACCOUNT" : 1,
+    "OTHER" : 1,
     "SUPPLIER" : 2,
     "STAFF" : 3,
     "PURCHASE_EXPENSES" : 4,
@@ -7,5 +8,8 @@
     "CONSIGNER" : 7,
     "CONSIGNEE" : 8,
     "SERVER_LEDGER_LIMIT" : 10000,
-    "NONBALANCE" : "(4)"
+    "INVOICE_EXPENSES" : 6,
+    "FREIGHT_EXPENSES" : 10,
+    "DAILY_EXPENSES" : 11, 
+    "NONBALANCE" : "(1, 4, 5, 10, 11)"
 }

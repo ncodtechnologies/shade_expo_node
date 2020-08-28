@@ -24,6 +24,8 @@ router.get('/stockReport/:type', function(req, res, next) {
         (
             SELECT id_sales_voucher_item as id,unit,sum(quantity) as sold, id_category FROM z_sales_voucher sv, z_sales_voucher_item svi,  product i WHERE sv.id_sales_voucher=svi.id_sales_voucher and i.type=${type} and svi.id_product=i.id_product  GROUP By date,id_category
             UNION
+            SELECT id_packing_item as id, unit,sum(ipi.qty) as sold, id_category FROM invoice_packing_item ipi, product i WHERE ipi.id_product=i.id_product  GROUP By date,i.id_category
+            UNION
             SELECT id_stock as id, unit,sum(st.quantity) as sold, id_category               FROM z_stock st,                                            product i WHERE st.id_product=i.id_product and i.type=${type}  and st.type=1 GROUP By date,i.id_category
             UNION
             SELECT id_invoice_items AS id, unit, SUM(kg) AS sold, id_category FROM invoice inv, invoice_items inv_i, product i WHERE inv.id_invoice=inv_i.id_invoice AND inv_i.id_product=i.id_product and i.type=${type}  GROUP By date,i.id_category
@@ -50,6 +52,8 @@ router.get('/stockReport/:type', function(req, res, next) {
       SELECT sum(sold) as sold, unit, id_category from
       (
           SELECT id_sales_voucher_item as id,unit, sum(quantity) as sold, id_category FROM z_sales_voucher sv, z_sales_voucher_item svi,  product i WHERE sv.id_sales_voucher=svi.id_sales_voucher  and svi.id_product=i.id_product and i.type=${type}  GROUP By date,id_category
+          UNION
+          SELECT id_packing_item as id, unit,sum(ipi.qty) as sold, id_category FROM invoice_packing_item ipi, product i WHERE ipi.id_product=i.id_product  GROUP By date,i.id_category
           UNION
           SELECT id_stock as id,unit, sum(st.quantity) as sold, id_category               FROM z_stock st,                                            product i WHERE st.id_product=i.id_product and st.type=1 and i.type=${type}   GROUP By date,i.id_category
           UNION

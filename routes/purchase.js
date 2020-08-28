@@ -3,7 +3,7 @@ var router = express.Router();
 
 router.get('/purchaseReport/:from/:to', function(req, res, next) {
 
-  db.query('select pv.id_purchase_voucher,pv.voucher_no,s.name as account_head,DATE_FORMAT(pv.date, "%d/%m/%Y") as date,sum(pvi.kg) as kg,sum(pvi.quantity) as quantity,sum(pvi.total) as amount from z_purchase_Voucher pv,z_purchase_voucher_item pvi, account_head s where pvi.id_purchase_voucher=pv.id_purchase_voucher and s.id_account_head=pv.id_account_head and date between '+req.params.from+' and '+req.params.to+' group by pv.voucher_no', function (err, rows, fields) {
+  db.query('select pv.id_purchase_voucher,pv.voucher_no,s.name as account_head,DATE_FORMAT(pv.date, "%d/%m/%Y") as date,sum(pvi.kg) as kg,sum(pvi.quantity) as quantity,sum(pvi.total) as amount from z_purchase_voucher pv,z_purchase_voucher_item pvi, account_head s where pvi.id_purchase_voucher=pv.id_purchase_voucher and s.id_account_head=pv.id_account_head and date between '+req.params.from+' and '+req.params.to+' group by pv.voucher_no', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
