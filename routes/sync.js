@@ -7,7 +7,7 @@ var upload = multer({ dest: 'uploads/' })
 function syncDb() {
    var qry = `INSERT INTO account_head (SELECT * FROM z_account_head WHERE modified_by = 'DESKTOP') ON DUPLICATE KEY UPDATE
    NAME=VALUES(NAME), CODE=VALUES(CODE),id_ledger_group=VALUES(id_ledger_group), opening_balance=VALUES(opening_balance),
-   phone=VALUES(phone), address=VALUES(address), modified_by=VALUES(modified_by), modidfied_date=VALUES(modified_date)`;
+   phone=VALUES(phone), address=VALUES(address), modified_by=VALUES(modified_by), modified_date=VALUES(modified_date)`;
   db.query(qry, function (err, rows, fields) {
     if (err) throw err
 
@@ -79,7 +79,7 @@ function restoreDb() {
   router.get('/backup', function(req, res, next) {
     const { exec } = require("child_process");
   
-    exec("mysqldump -u root -pNc0d#Mysql shade_app account_head ledger_group invoice invoice_items payroll account_voucher notification > sync/syncDown.sql", (error, stdout, stderr) => {
+    exec("mysqldump -u root -pNc0d#Mysql shade_app account_head ledger_group invoice invoice_items payroll account_voucher notification invoice_packing_item > sync/syncDown.sql", (error, stdout, stderr) => {
         if (error) {
             console.log(`error: ${error.message}`);
             return;

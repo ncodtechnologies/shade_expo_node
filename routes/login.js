@@ -1,9 +1,12 @@
 var express = require('express');
 var router = express.Router();
 
-router.get('/login', function(req, res, next) {
+router.post('/login', function(req, res, next) {
 
-  db.query('select * from login', function (err, rows, fields) {
+  let username        = req.body.username;
+  let password        = req.body.password;
+
+  db.query(`select * from users where username='${username}' and password='${password}'`, function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 
