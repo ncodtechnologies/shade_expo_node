@@ -1,7 +1,8 @@
 var express = require('express');
 var router = express.Router();
 const fs = require('fs');
-var multer  = require('multer')
+var multer  = require('multer');
+const { isNullOrUndefined } = require('util');
 var upload = multer({ dest: 'uploads/' })
 
 router.post('/roughInvoice', function(req, res, next) {
@@ -149,6 +150,36 @@ router.get('/invoiceList/:activePage', function(req, res, next) {
         data.items = rows_;
         
         res.send(data); 
+      })
+  })
+
+});
+router.get('/invoiceList/:from/:to/:activePage/:invoice_no', function(req, res, next) {
+  console.log(req.params)
+  
+  let numOfItems  = (req.params.activePage -1) * 10
+  let from        = req.params.from;
+  let to          = req.params.to;
+  let invoice_no  = req.params.invoice_no;
+  var condition  = '';
+  
+  if(invoice_no != 'null' ){
+    condition =`and invoice_no='`+req.params.invoice_no+`'` ;
+  }
+  
+  console.log(condition)
+  console.log(invoice_no)
+  db.query(`select count(*) as totalCount from invoice where date between '${from}' and  '${to}'  ${condition} `, function (err, rows, fields) {
+    if (err) throw err
+
+      db.query(`select id_invoice,invoice_no,(select name from account_head where id_account_head = consignee) as consignee,DATE_FORMAT(date, "%d/%m/%Y") as date from invoice where date between '${from}' and '${to}'  ${condition} order by id_invoice DESC limit ${numOfItems},10 `, function (err, rows_, fields) {
+        if (err) throw err
+            
+        var data = {};
+        data.totalCount = rows[0].totalCount;
+        data.items = rows_;
+        
+        res.send(data); 
         console.log(data);
       })
   })
@@ -174,7 +205,7 @@ router.get('/roughInvoiceList/:activePage', function(req, res, next) {
 });
 
 router.get('/invoice/:id_invoice', function(req, res, next) {
-
+//console.log(req.params)
   db.query('select * from invoice where id_invoice='+req.params.id_invoice+'', function (err, rows, fields) {
     if (err) throw err
     

@@ -197,7 +197,7 @@ router.get('/cashBookDebit/:from_date/:to_date/:id_account_head/:activePage', fu
 
     if (err) throw err
      
-    db.query(`SELECT name,narration,ROUND(SUM(debit)) AS debit FROM ( SELECT '1' AS slno, id_account_voucher AS id, (SELECT name FROM account_head WHERE id_account_head=av.id_ledger_from) AS name ,description AS narration,CAST(amount AS CHAR) AS debit FROM account_voucher av, account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head})tbl GROUP BY NAME limit ${numOfItems},10`, function (err, rows_, fields) {
+    db.query(`SELECT name,DATE_FORMAT(date, "%d/%m/%Y") as date,narration,ROUND(SUM(debit)) AS debit FROM ( SELECT '1' AS slno, date,id_account_voucher AS id, (SELECT name FROM account_head WHERE id_account_head=av.id_ledger_from) AS name ,description AS narration,CAST(amount AS CHAR) AS debit FROM account_voucher av, account_head ah WHERE av.id_ledger_to=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_to=${id_account_head}  ORDER BY date)tbl GROUP BY NAME limit ${numOfItems},10`, function (err, rows_, fields) {
 
       if (err) throw err
 
@@ -211,16 +211,27 @@ router.get('/cashBookDebit/:from_date/:to_date/:id_account_head/:activePage', fu
 
 });
 
-router.get('/cashBookCredit/:from_date/:to_date/:id_account_head', function(req, res, next) {
+router.get('/cashBookCredit/:from_date/:to_date/:id_account_head/:activePage', function(req, res, next) {
  
   let to_date = req.params.to_date;
   let from_date = req.params.from_date;
   let id_account_head = req.params.id_account_head;
-  db.query(`SELECT name,narration,ROUND(SUM(credit)) AS credit FROM (SELECT '2' AS slno, id_account_voucher AS id, (SELECT name FROM account_head WHERE id_account_head=av.id_ledger_to) AS name ,description AS narration,CAST(amount AS CHAR) AS credit FROM account_voucher av, account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_from=${id_account_head})tbl GROUP BY NAME`, function (err, rows, fields) {
+  let numOfItems = (req.params.activePage -1) * 10
+
+  db.query(`SELECT count(*) as totalCount from (SELECT name,narration,ROUND(SUM(credit)) AS credit FROM (SELECT '2' AS slno, id_account_voucher AS id, (SELECT name FROM account_head WHERE id_account_head=av.id_ledger_to) AS name ,description AS narration,CAST(amount AS CHAR) AS credit FROM account_voucher av, account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_from=${id_account_head})tbl GROUP BY NAME) tbl`, function (err, rows, fields) {
+ 
+  if (err) throw err
+
+  db.query(`SELECT name,DATE_FORMAT(date, "%d/%m/%Y") as date,narration,ROUND(SUM(credit)) AS credit FROM (SELECT '2' AS slno, id_account_voucher AS id, (SELECT name FROM account_head WHERE id_account_head=av.id_ledger_to) AS name ,date,description AS narration,CAST(amount AS CHAR) AS credit FROM account_voucher av, account_head ah WHERE av.id_ledger_from=ah.id_account_head AND amount>0 AND date between ${from_date} and ${to_date} and id_ledger_from=${id_account_head})tbl GROUP BY NAME order by date limit ${numOfItems},10`, function (err, rows_, fields) {
  
     if (err) throw err
 
-     res.send(rows); 
+    data ={};
+      data.items=rows_;
+      data.totalCountDebit=rows[0].totalCount;
+     res.send(data);  
+     console.log(data)
+    }) 
   })
 
 });
