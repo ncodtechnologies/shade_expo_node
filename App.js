@@ -12,6 +12,7 @@ var productRouter = require('./routes/product');
 var payrollRouter = require('./routes/payroll');
 var accountsRouter = require('./routes/accounts');
 var purchaseRouter = require('./routes/purchase');
+var salesRouter = require('./routes/sales');
 var notificationRouter = require('./routes/notification');
 var syncRouter = require('./routes/sync');
 var mysql = require('mysql')
@@ -46,6 +47,7 @@ app.use('/product', productRouter);
 app.use('/payroll', payrollRouter);
 app.use('/accounts', accountsRouter);
 app.use('/purchase', purchaseRouter);
+app.use('/sales', salesRouter);
 app.use('/notification', notificationRouter);
 app.use('/sync', syncRouter);
 
