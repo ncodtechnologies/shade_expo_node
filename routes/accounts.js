@@ -6,6 +6,7 @@ router.post('/ledgerCreate', function(req, res, next) {
 
   let code            = (req.body.code ? req.body.code : '')
   let name            = (req.body.name ? req.body.name : '')
+  let title           = (req.body.title ? req.body.title : '')
   let id              = (req.body.id ? req.body.id : '')
   let op              = (req.body.op ? req.body.op : '')
   let address         = (req.body.address ? req.body.address : '')
@@ -17,7 +18,7 @@ router.post('/ledgerCreate', function(req, res, next) {
       if (err) throw err
       
       var id_account_head = rows[0].id_account_head != null ? rows[0].id_account_head : Constants.SERVER_LEDGER_LIMIT;
-      var qry=`insert into account_head (id_account_head, code ,name,id_ledger_group,opening_balance,address,phone,modified_by,modified_date) values('${id_account_head}','${code}','${name}',${id}, '${op}', '${address}', '${phone}','ADMIN',NOW())`;
+      var qry=`insert into account_head (id_account_head, code ,name,title,id_ledger_group,opening_balance,address,phone,modified_by,modified_date) values('${id_account_head}','${code}','${name}','${title}',${id}, '${op}', '${address}', '${phone}','ADMIN',NOW())`;
       
       db.query(qry,function (err, result) {
         if (err) throw err;
@@ -28,7 +29,7 @@ router.post('/ledgerCreate', function(req, res, next) {
   }
   else
   {
-    var qry=`update account_head set code='${code}' ,name='${name}',id_ledger_group = ${id},opening_balance = '${op}',address ='${address}',phone ='${phone}',modified_by ='ADMIN',modified_date=NOW() where id_account_head=`+req.body.id_account_head+``;
+    var qry=`update account_head set code='${code}' ,name='${name}',title='${title}',id_ledger_group = ${id},opening_balance = '${op}',address ='${address}',phone ='${phone}',modified_by ='ADMIN',modified_date=NOW() where id_account_head=`+req.body.id_account_head+``;
   
     db.query(qry,function (err, result) {
       if (err) throw err;
