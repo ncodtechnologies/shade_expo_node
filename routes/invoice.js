@@ -158,9 +158,10 @@ router.get('/invoiceList/:from/:to/:activePage/:invoice_no', function(req, res, 
   let to          = req.params.to;
   let invoice_no  = req.params.invoice_no;
   var condition  = '';
+  invoice_no = invoice_no.replace("_","/");
   
   if(invoice_no != 'null' ){
-    condition =`and invoice_no='`+req.params.invoice_no+`'` ;
+    condition =`and invoice_no like '%${req.params.invoice_no}%'` ;
   }
   
   console.log(condition)

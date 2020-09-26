@@ -9,7 +9,7 @@ router.post('/payroll', function(req, res, next) {
   let amount          = req.body.amount;
   let type            = req.body.type;
   
-  db.query(`insert into payroll (date, id_account_head, type, amount) values('${date}', ${id_ledger}, '${type}', '${amount}')`,function (err, result) {
+  db.query(`insert into payroll (date, id_account_head, type, amount, id_invoice) values('${date}', ${id_ledger}, '${type}', '${amount}',0)`,function (err, result) {
     if (err) throw err;
     
     res.send(result);
@@ -19,7 +19,7 @@ router.post('/payroll', function(req, res, next) {
 
 router.get('/payroll/:date', function(req, res, next) {
 
-  db.query('select a.name,DATE_FORMAT(p.date, "%d/%m/%Y") as date,p.type,p.amount,p.id_payroll from payroll p, account_head a where p.id_account_head=a.id_account_head and date='+req.params.date+'', function (err, rows, fields) {
+  db.query('select a.name,DATE_FORMAT(p.date, "%d/%m/%Y") as date,p.type,p.amount,p.id_payroll from payroll p, account_head a where p.id_account_head=a.id_account_head and id_invoice=0 and date='+req.params.date+'', function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 

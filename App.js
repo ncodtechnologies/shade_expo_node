@@ -14,12 +14,14 @@ var accountsRouter = require('./routes/accounts');
 var purchaseRouter = require('./routes/purchase');
 var notificationRouter = require('./routes/notification');
 var syncRouter = require('./routes/sync');
-var mysql = require('mysql')
+var statementRouter = require('./routes/statement');
+var mysql = require('mysql');
+const { stat } = require('fs');
 
 const db = mysql.createConnection ({
   host: 'localhost',
   user: 'root',
-  password: '',
+  password: 'Nc0d#Mysql',
   database: 'shade_app',
   port: 3306
 });
@@ -48,6 +50,7 @@ app.use('/accounts', accountsRouter);
 app.use('/purchase', purchaseRouter);
 app.use('/notification', notificationRouter);
 app.use('/sync', syncRouter);
+app.use('/statement', statementRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
