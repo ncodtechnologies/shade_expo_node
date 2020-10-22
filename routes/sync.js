@@ -7,7 +7,7 @@ var upload = multer({ dest: 'uploads/' })
 function syncDb() {
    var qry = `INSERT INTO account_head (SELECT * FROM z_account_head WHERE modified_by = 'DESKTOP') ON DUPLICATE KEY UPDATE
    NAME=VALUES(NAME), CODE=VALUES(CODE),id_ledger_group=VALUES(id_ledger_group), opening_balance=VALUES(opening_balance),
-   phone=VALUES(phone), address=VALUES(address), modified_by=VALUES(modified_by), modified_date=VALUES(modified_date)`;
+   phone=VALUES(phone), address=VALUES(address), title=VALUES(title), modified_by=VALUES(modified_by), modified_date=VALUES(modified_date)`;
   db.query(qry, function (err, rows, fields) {
     if (err) throw err
 
