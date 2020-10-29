@@ -16,6 +16,7 @@ var salesRouter = require('./routes/sales');
 var notificationRouter = require('./routes/notification');
 var syncRouter = require('./routes/sync');
 var statementRouter = require('./routes/statement');
+
 var mysql = require('mysql');
 const { stat } = require('fs');
 

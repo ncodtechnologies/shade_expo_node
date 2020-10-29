@@ -138,7 +138,7 @@ router.get('/invoiceList/:activePage', function(req, res, next) {
   db.query(`select count(*) as totalCount from invoice  `, function (err, rows, fields) {
     if (err) throw err
 
-      db.query(`select id_invoice,invoice_no,(select name from account_head where id_account_head = consignee) as consignee,(select name from account_head where id_account_head = consigner) as consigner,DATE_FORMAT(date, "%d/%m/%Y") as date, port_load, awb_no, status from invoice order by id_invoice DESC limit ${numOfItems},10 `, function (err, rows_, fields) {
+      db.query(`select id_invoice,invoice_no,(select title from account_head where id_account_head = consignee) as consignee,(select name from account_head where id_account_head = consigner) as consigner,DATE_FORMAT(date, "%d/%m/%Y") as date, port_load, awb_no, status from invoice order by id_invoice DESC limit ${numOfItems},10 `, function (err, rows_, fields) {
         if (err) throw err
             
         var data = {};
