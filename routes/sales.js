@@ -13,7 +13,7 @@ console.log(req.params);
     product = ` and pvi.id_product='` + req.params.id_product + `' `;
   }
   db.query(`SELECT * FROM (
-    select pv.voucher_no,ah.name,DATE_FORMAT(pv.date ,'%d/%m/%Y') as date,i.name as product,pvi.quantity,round(pvi.unit_price,2) as unit_price,round((pvi.total),2) as total from z_sales_Voucher pv,z_sales_Voucher_Item pvi,account_head ah,product i where pvi.id_sales_voucher=pv.id_sales_voucher and ah.id_account_head=pv.id_account_head and pvi.id_product=i.id_product and date between `+req.params.from+` and `+req.params.to+` ${supplier} ${product} ) tbl`, function (err, rows, fields) {
+    select pv.voucher_no,ah.name,DATE_FORMAT(pv.date ,'%d/%m/%Y') as date,i.name as product,pvi.quantity,round(pvi.unit_price,2) as unit_price,round((pvi.total),2) as total from z_sales_voucher pv,z_sales_voucher_item pvi,account_head ah,product i where pvi.id_sales_voucher=pv.id_sales_voucher and ah.id_account_head=pv.id_account_head and pvi.id_product=i.id_product and date between `+req.params.from+` and `+req.params.to+` ${supplier} ${product} ) tbl`, function (err, rows, fields) {
     if (err) throw err
 
      res.send(rows); 

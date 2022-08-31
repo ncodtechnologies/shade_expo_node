@@ -20,7 +20,7 @@ var statementRouter = require('./routes/statement');
 var mysql = require('mysql');
 const { stat } = require('fs');
 
-const db = mysql.createConnection ({
+var db = mysql.createConnection ({
   host: 'localhost',
   user: 'root',
   password: 'Nc0d#Mysql',
@@ -30,7 +30,7 @@ const db = mysql.createConnection ({
 
 var app = express();
 
-// view engine setup
+// view engine setup'0
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
@@ -41,19 +41,33 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-global.db = db;
+app.use('/:year/*',function (req, res, next) {
+  console.log('Request Type:', req.params.year)
+  const db_name = req.params.year == "2020" ? "shade_app" : `shade_app_${req.params.year}`
+  var db = mysql.createConnection ({
+    host: 'localhost',
+    user: 'root',
+    password: 'Nc0d#Mysql',
+    database: db_name,
+    port: 3306
+  });
+  global.db = db;
+  global.db_name = db_name;
+  next()
+})
 
-app.use('/', indexRouter);
-app.use('/login', loginRouter);
-app.use('/invoice', invoiceRouter);
-app.use('/product', productRouter);
-app.use('/payroll', payrollRouter);
-app.use('/accounts', accountsRouter);
-app.use('/purchase', purchaseRouter);
-app.use('/sales', salesRouter);
-app.use('/notification', notificationRouter);
-app.use('/sync', syncRouter);
-app.use('/statement', statementRouter);
+
+app.use('/:year', indexRouter);
+app.use('/:year/login', loginRouter);
+app.use('/:year/invoice', invoiceRouter);
+app.use('/:year/product', productRouter);
+app.use('/:year/payroll', payrollRouter);
+app.use('/:year/accounts', accountsRouter);
+app.use('/:year/purchase', purchaseRouter);
+app.use('/:year/sales', salesRouter);
+app.use('/:year/notification', notificationRouter);
+app.use('/:year/sync', syncRouter);
+app.use('/:year/statement', statementRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

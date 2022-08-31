@@ -11,5 +11,6 @@
     "INVOICE_EXPENSES" : 6,
     "FREIGHT_EXPENSES" : 10,
     "DAILY_EXPENSES" : 11, 
-    "NONBALANCE" : "(1, 4, 5, 10, 11)"
+    "OTHER_INCOME" : 10001,
+    "NONBALANCE" : "(1, 4, 5, 6, 10, 11, 12, 13, 10001)"
 }
